@@ -1,0 +1,21 @@
+{
+  "name": "vh-team-fighters",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "turbo run dev --filter=@vh/api --filter=web",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "db:generate": "pnpm --filter @vh/database generate",
+    "db:migrate": "pnpm --filter @vh/database migrate:dev",
+    "db:deploy": "pnpm --filter @vh/database migrate:deploy",
+    "db:seed": "pnpm --filter @vh/database seed",
+    "db:studio": "pnpm --filter @vh/database studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3"
+  }
+}

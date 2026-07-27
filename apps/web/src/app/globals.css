@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #0d0f12;
+  --cream: #f3efe6;
+  --accent: #e11d2e;
+  --accent-strong: #b01020;
+  --muted: #9aa0a8;
+  --panel: #161a20;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-cream: var(--cream);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-muted: var(--muted);
+  --color-panel: var(--panel);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--cream);
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.animate-rise {
+  animation: rise 0.8s ease-out both;
+}
+
+.animate-rise-delay {
+  animation: rise 0.9s ease-out 0.15s both;
+}
+
+.animate-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* Admin: cartões claros herdam cream do layout escuro — forçar texto legível */
+.admin-surface .bg-white {
+  color: var(--ink);
+}
+.admin-surface select {
+  color: var(--ink);
+  background-color: #fff;
+}
