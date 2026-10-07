@@ -1,4 +1,6 @@
-/** Simple in-memory sliding-window rate limiter (per process). */
+import type Redis from "ioredis";
+
+/** In-memory sliding-window rate limiter (per process) — fallback when Redis is down. */
 export class SlidingWindowRateLimiter {
   private readonly hits = new Map<string, number[]>();
 
@@ -23,17 +25,41 @@ export class SlidingWindowRateLimiter {
   }
 }
 
+/**
+ * Prefer Express `req.ip` (respects `trust proxy`).
+ * Do not trust client-supplied X-Forwarded-For for rate limits.
+ */
 export function clientIp(req: {
-  headers: Record<string, string | string[] | undefined>;
   ip?: string;
   socket?: { remoteAddress?: string };
 }): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.length) {
-    return forwarded.split(",")[0]!.trim();
-  }
-  if (Array.isArray(forwarded) && forwarded[0]) {
-    return forwarded[0].split(",")[0]!.trim();
-  }
   return req.ip || req.socket?.remoteAddress || "unknown";
+}
+
+/** Redis fixed-window counter; falls back to memory limiter on error. */
+export class RedisRateLimiter {
+  private readonly memory: SlidingWindowRateLimiter;
+
+  constructor(
+    private readonly redis: Redis | null,
+    private readonly limit: number,
+    private readonly windowMs: number,
+    private readonly prefix: string,
+  ) {
+    this.memory = new SlidingWindowRateLimiter(limit, windowMs);
+  }
+
+  async allow(key: string): Promise<boolean> {
+    if (!this.redis) return this.memory.allow(key);
+    const redisKey = `${this.prefix}:${key}`;
+    try {
+      const count = await this.redis.incr(redisKey);
+      if (count === 1) {
+        await this.redis.pexpire(redisKey, this.windowMs);
+      }
+      return count <= this.limit;
+    } catch {
+      return this.memory.allow(key);
+    }
+  }
 }

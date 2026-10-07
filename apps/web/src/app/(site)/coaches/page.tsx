@@ -2,6 +2,8 @@ import { publicGet } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Coaches",
   description: "Equipa técnica da VH Team Fighters.",

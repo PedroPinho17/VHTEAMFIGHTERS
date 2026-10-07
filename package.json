@@ -11,7 +11,7 @@
     "docker:down": "docker compose --profile local down",
     "test": "pnpm --filter @vh/api test",
     "typecheck": "pnpm --filter @vh/api typecheck && pnpm --filter web exec tsc --noEmit",
-    "env:sync": "node -e \"require('fs').copyFileSync('.env','packages/database/.env'); console.log('Synced .env → packages/database/.env')\"",
+    "env:sync": "node scripts/env-sync.mjs",
     "db:generate": "pnpm --filter @vh/database generate",
     "db:migrate": "pnpm env:sync && pnpm --filter @vh/database migrate:dev",
     "db:deploy": "pnpm env:sync && pnpm --filter @vh/database migrate:deploy",
@@ -21,5 +21,26 @@
   "devDependencies": {
     "turbo": "^2.5.4",
     "typescript": "^5.8.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "next": "15.5.24",
+      "nodemailer": "10.0.6",
+      "sharp": "0.35.5",
+      "proxy-addr": "2.0.8",
+      "tinypool": "2.2.0",
+      "brace-expansion@1": "1.1.20",
+      "brace-expansion@2": "2.1.6",
+      "brace-expansion@5": "5.0.12",
+      "deepmerge-ts": "8.0.0",
+      "multer": "2.3.0",
+      "nanoid@3": "3.3.18",
+      "js-yaml": "4.3.2",
+      "postcss": "8.5.18",
+      "browserslist": "4.28.7",
+      "fast-uri": "3.1.7",
+      "ip-address": "10.3.1",
+      "source-map-js": "1.2.2"
+    }
   }
 }

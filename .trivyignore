@@ -1,1 +1,4 @@
-# Ignore known accepted advisories here (one CVE ID per line) when justified.
+# Sem versao corrigida publicada (Trivy FixedVersion vazio). Rever trimestralmente.
+# Alinhado com ClubOS — so para CVEs sem patch disponivel no ecossistema.
+CVE-2026-93687
+CVE-2026-85393

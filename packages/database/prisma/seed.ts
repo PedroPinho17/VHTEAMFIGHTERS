@@ -1,5 +1,15 @@
+import { config as loadEnv } from "dotenv";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { PrismaClient, PersonRole, WeekDay, UserRole } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
+
+for (const path of [
+  resolve(process.cwd(), "../../.env"),
+  resolve(process.cwd(), ".env"),
+]) {
+  if (existsSync(path)) loadEnv({ path });
+}
 
 const prisma = new PrismaClient();
 

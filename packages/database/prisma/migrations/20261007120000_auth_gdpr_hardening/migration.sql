@@ -1,11 +1,3 @@
--- AlterEnum
-ALTER TYPE "UserRole" ADD VALUE 'NONE';
-
--- AlterTable user
-ALTER TABLE "user" ADD COLUMN "mustChangePassword" BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE "user" ALTER COLUMN "role" SET DEFAULT 'NONE';
-
--- AlterTable Enrollment
-ALTER TABLE "Enrollment" ADD COLUMN "privacyConsent" BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE "Enrollment" ADD COLUMN "consentAt" TIMESTAMP(3);
-ALTER TABLE "Enrollment" ADD COLUMN "erasedAt" TIMESTAMP(3);
+-- Postgres forbids using a newly added enum value in the same transaction.
+-- This migration only adds the value; defaults/columns come in the next one.
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'NONE';

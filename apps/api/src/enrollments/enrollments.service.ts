@@ -4,29 +4,41 @@ import {
   HttpStatus,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { EnrollmentStatus } from "@vh/database";
 import { PrismaService } from "../prisma/prisma.service";
+import { RedisService } from "../redis/redis.service";
 import { CreateEnrollmentDto, UpdateEnrollmentStatusDto } from "./enrollments.dto";
 import { ENROLLMENT_QUEUE } from "./enrollment.processor";
-import { SlidingWindowRateLimiter } from "../common/rate-limit";
+import { RedisRateLimiter } from "../common/rate-limit";
 
 @Injectable()
-export class EnrollmentsService {
-  private readonly limiter = new SlidingWindowRateLimiter(5, 15 * 60 * 1000);
+export class EnrollmentsService implements OnModuleInit {
+  private limiter!: RedisRateLimiter;
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
     @InjectQueue(ENROLLMENT_QUEUE) private readonly queue: Queue,
   ) {}
+
+  onModuleInit() {
+    this.limiter = new RedisRateLimiter(
+      this.redis.client,
+      5,
+      15 * 60 * 1000,
+      "rl:enroll",
+    );
+  }
 
   async create(dto: CreateEnrollmentDto, ip: string) {
     if (dto.website?.trim()) {
       return { ok: true, id: "ignored" };
     }
-    if (!this.limiter.allow(`enroll:${ip}`)) {
+    if (!(await this.limiter.allow(ip))) {
       throw new HttpException(
         "Demasiados pedidos. Tenta mais tarde.",
         HttpStatus.TOO_MANY_REQUESTS,

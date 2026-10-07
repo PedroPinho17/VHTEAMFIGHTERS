@@ -21,7 +21,7 @@ export default function AdminSecurityPage() {
   const [name, setName] = useState("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
-  const role = (session?.user as { role?: string } | undefined)?.role ?? "EDITOR";
+  const role = (session?.user as { role?: string } | undefined)?.role ?? "NONE";
 
   async function load() {
     const { data, error: err } = await authClient.passkey.listUserPasskeys();

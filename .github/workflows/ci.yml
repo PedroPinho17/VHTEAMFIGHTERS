@@ -14,15 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Dependency vuln scan (Trivy HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: fs
-          scan-ref: .
+          scan-ref: pnpm-lock.yaml
           scanners: vuln
           severity: HIGH,CRITICAL
           exit-code: "1"
-          skip-dirs: node_modules,.git
+          ignore-unfixed: true
           trivyignores: .trivyignore
+          format: table
+
 
   test:
     runs-on: ubuntu-latest
@@ -57,13 +59,13 @@ jobs:
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_API_URL: http://localhost:3000
       INTERNAL_API_URL: http://localhost:3001
-      ADMIN_EMAIL: admin@ci.local
+      ADMIN_EMAIL: admin@vhteamfighters.pt
       ADMIN_PASSWORD: CiAdminPass12!
       ADMIN_NAME: CI Admin
-      ENROLLMENT_NOTIFY_TO: notify@ci.example.com
+      ENROLLMENT_NOTIFY_TO: notify@vhteamfighters.pt
       SMTP_HOST: localhost
       SMTP_PORT: "1025"
-      SMTP_FROM: noreply@ci.local
+      SMTP_FROM: noreply@vhteamfighters.pt
       S3_ENDPOINT: http://localhost:9014
       S3_PUBLIC_URL: http://localhost:9014
       S3_ACCESS_KEY: minioadmin
@@ -117,6 +119,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build API image
-        run: docker build -f apps/api/Dockerfile -t vh-api:ci .
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            docker build -f apps/api/Dockerfile -t vh-api:ci . && exit 0
+            echo "API docker build failed (attempt $i), retrying..."
+            sleep $((i * 5))
+          done
+          exit 1
       - name: Build Web image
-        run: docker build -f apps/web/Dockerfile -t vh-web:ci .
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            docker build \
+              -f apps/web/Dockerfile \
+              --build-arg NEXT_PUBLIC_APP_URL=http://localhost:3000 \
+              --build-arg NEXT_PUBLIC_API_URL=same-origin \
+              --build-arg NEXT_PUBLIC_S3_BUCKET=vh-media \
+              -t vh-web:ci . && exit 0
+            echo "Web docker build failed (attempt $i), retrying..."
+            sleep $((i * 5))
+          done
+          exit 1

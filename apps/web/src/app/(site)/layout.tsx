@@ -3,6 +3,9 @@ import { SiteFooter, type FooterContact } from "@/components/site-footer";
 import { getBranding } from "@/lib/branding";
 import { publicGet } from "@/lib/api";
 
+/** Avoid prerender/fetch against API during Docker/CI image builds. */
+export const dynamic = "force-dynamic";
+
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const [{ logoUrl }, contact] = await Promise.all([
     getBranding(),
