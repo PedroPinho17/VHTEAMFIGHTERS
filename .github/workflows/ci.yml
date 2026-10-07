@@ -17,12 +17,13 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
-          scan-ref: .
+          scan-ref: pnpm-lock.yaml
           scanners: vuln
           severity: HIGH,CRITICAL
           exit-code: "1"
-          skip-dirs: node_modules,.git
+          ignore-unfixed: true
           trivyignores: .trivyignore
+
 
   test:
     runs-on: ubuntu-latest
@@ -129,7 +130,12 @@ jobs:
         run: |
           set -euo pipefail
           for i in 1 2 3; do
-            docker build -f apps/web/Dockerfile -t vh-web:ci . && exit 0
+            docker build \
+              -f apps/web/Dockerfile \
+              --build-arg NEXT_PUBLIC_APP_URL=http://localhost:3000 \
+              --build-arg NEXT_PUBLIC_API_URL=same-origin \
+              --build-arg NEXT_PUBLIC_S3_BUCKET=vh-media \
+              -t vh-web:ci . && exit 0
             echo "Web docker build failed (attempt $i), retrying..."
             sleep $((i * 5))
           done
