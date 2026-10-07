@@ -13,32 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Trivy
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-            | sh -s -- -b "$HOME/.local/bin" v0.66.0
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Dependency vuln scan (Trivy HIGH/CRITICAL)
-        run: |
-          set -euo pipefail
-          trivy fs pnpm-lock.yaml \
-            --scanners vuln \
-            --severity HIGH,CRITICAL \
-            --ignore-unfixed \
-            --ignorefile .trivyignore \
-            --format json \
-            -o /tmp/trivy.json
-          trivy convert --format table /tmp/trivy.json || true
-          jq -r '
-            [.Results[]?.Vulnerabilities // [] | .[]]
-            | .[]
-            | "\(.Severity)|\(.PkgName)|\(.VulnerabilityID)|installed=\(.InstalledVersion)|fixed=\(.FixedVersion // "-")"
-          ' /tmp/trivy.json | while IFS= read -r line; do
-            echo "::error title=Trivy::$line"
-          done || true
-          count="$(jq '[.Results[]?.Vulnerabilities // [] | .[]] | length' /tmp/trivy.json)"
-          echo "Remaining HIGH/CRITICAL (fixed available): $count"
-          test "$count" -eq 0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: fs
+          scan-ref: pnpm-lock.yaml
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          format: table
 
 
   test:
