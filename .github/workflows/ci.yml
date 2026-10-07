@@ -117,6 +117,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build API image
-        run: docker build -f apps/api/Dockerfile -t vh-api:ci .
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            docker build -f apps/api/Dockerfile -t vh-api:ci . && exit 0
+            echo "API docker build failed (attempt $i), retrying..."
+            sleep $((i * 5))
+          done
+          exit 1
       - name: Build Web image
-        run: docker build -f apps/web/Dockerfile -t vh-web:ci .
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            docker build -f apps/web/Dockerfile -t vh-web:ci . && exit 0
+            echo "Web docker build failed (attempt $i), retrying..."
+            sleep $((i * 5))
+          done
+          exit 1
