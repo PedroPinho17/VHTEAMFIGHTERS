@@ -77,3 +77,30 @@ body {
   color: var(--ink);
   background-color: #fff;
 }
+
+.prose-vh h2 {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+  margin: 1.5rem 0 0.75rem;
+}
+.prose-vh h3 {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.5rem;
+  margin: 1.25rem 0 0.5rem;
+}
+.prose-vh p {
+  margin: 0 0 1rem;
+}
+.prose-vh ul {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.prose-vh a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+.prose-vh strong {
+  font-weight: 700;
+}

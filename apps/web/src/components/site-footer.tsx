@@ -1,11 +1,24 @@
 import Link from "next/link";
 
-type Props = {
-  logoUrl?: string | null;
+export type FooterContact = {
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  youtubeUrl?: string | null;
 };
 
-export function SiteFooter({ logoUrl }: Props) {
+type Props = {
+  logoUrl?: string | null;
+  contact?: FooterContact | null;
+};
+
+export function SiteFooter({ logoUrl, contact }: Props) {
   const src = logoUrl || "/logo.png";
+  const phone = contact?.phone;
+  const address = contact?.address ?? "Lobão";
+  const phoneHref = phone ? `tel:${phone.replace(/\s/g, "")}` : null;
 
   return (
     <footer className="border-t border-white/10 bg-ink text-cream/70">
@@ -16,35 +29,36 @@ export function SiteFooter({ logoUrl }: Props) {
           <div>
             <p className="font-display text-xl text-cream">VH Team Fighters</p>
             <p className="mt-1 text-sm">Boxe · Kickboxing · Lobão</p>
-            <p className="mt-1 text-xs text-cream/50">R. Principal n.104, 4505-515 Lobão</p>
+            {address && <p className="mt-1 text-xs text-cream/50">{address}</p>}
           </div>
         </div>
         <div className="flex flex-wrap gap-5 text-sm">
           <Link href="/contactos" className="hover:text-accent">
             Contactos
           </Link>
-          <a href="tel:917673853" className="hover:text-accent">
-            917 673 853
-          </a>
-          <a
-            href="https://www.instagram.com/vhteamfighters"
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-accent"
-          >
-            Instagram
-          </a>
-          <a
-            href="https://www.facebook.com/100063594130412"
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-accent"
-          >
-            Facebook
-          </a>
-          <Link href="/admin" className="hover:text-accent">
-            Admin
+          <Link href="/privacidade" className="hover:text-accent">
+            Privacidade
           </Link>
+          {phoneHref && (
+            <a href={phoneHref} className="hover:text-accent">
+              {phone}
+            </a>
+          )}
+          {contact?.instagramUrl && (
+            <a href={contact.instagramUrl} target="_blank" rel="noreferrer" className="hover:text-accent">
+              Instagram
+            </a>
+          )}
+          {contact?.facebookUrl && (
+            <a href={contact.facebookUrl} target="_blank" rel="noreferrer" className="hover:text-accent">
+              Facebook
+            </a>
+          )}
+          {contact?.youtubeUrl && (
+            <a href={contact.youtubeUrl} target="_blank" rel="noreferrer" className="hover:text-accent">
+              YouTube
+            </a>
+          )}
         </div>
       </div>
     </footer>

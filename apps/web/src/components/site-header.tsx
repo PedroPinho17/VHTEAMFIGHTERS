@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -27,6 +27,10 @@ export function SiteHeader({ logoUrl }: Props) {
   const onHome = pathname === "/";
   const src = logoUrl || "/logo.png";
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   return (
     <header
       className={cn(
@@ -47,7 +51,7 @@ export function SiteHeader({ logoUrl }: Props) {
             VH TEAM
           </span>
         </Link>
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-5 lg:flex" aria-label="Principal">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -65,21 +69,28 @@ export function SiteHeader({ logoUrl }: Props) {
           ))}
         </nav>
         <button
-          className={cn("md:hidden", onHome ? "text-cream" : "text-ink")}
+          type="button"
+          className={cn(
+            "inline-flex h-10 w-10 items-center justify-center rounded-md lg:hidden",
+            onHome ? "text-cream" : "text-ink",
+          )}
           onClick={() => setOpen((v) => !v)}
-          aria-label="Menu"
+          aria-label={open ? "Fechar menu" : "Abrir menu"}
+          aria-expanded={open}
+          aria-controls="mobile-nav"
         >
-          Menu
+          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
       {open && (
         <div
+          id="mobile-nav"
           className={cn(
-            "border-t px-5 py-4 md:hidden",
+            "border-t px-5 py-4 lg:hidden",
             onHome ? "border-white/10 bg-ink/95" : "border-ink/10 bg-cream",
           )}
         >
-          <div className="flex flex-col gap-3">
+          <nav className="flex flex-col gap-3" aria-label="Mobile">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -88,12 +99,13 @@ export function SiteHeader({ logoUrl }: Props) {
                 className={cn(
                   "text-sm uppercase tracking-[0.14em]",
                   onHome ? "text-cream/85" : "text-ink/80",
+                  pathname === link.href && "text-accent",
                 )}
               >
                 {link.label}
               </Link>
             ))}
-          </div>
+          </nav>
         </div>
       )}
     </header>

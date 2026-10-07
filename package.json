@@ -6,13 +6,17 @@
     "dev": "turbo run dev --filter=@vh/api --filter=web",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
+    "smoke": "node scripts/smoke-check.mjs",
+    "docker:up": "docker compose --profile local up -d",
+    "docker:down": "docker compose --profile local down",
+    "test": "pnpm --filter @vh/api test",
+    "typecheck": "pnpm --filter @vh/api typecheck && pnpm --filter web exec tsc --noEmit",
+    "env:sync": "node -e \"require('fs').copyFileSync('.env','packages/database/.env'); console.log('Synced .env → packages/database/.env')\"",
     "db:generate": "pnpm --filter @vh/database generate",
-    "db:migrate": "pnpm --filter @vh/database migrate:dev",
-    "db:deploy": "pnpm --filter @vh/database migrate:deploy",
+    "db:migrate": "pnpm env:sync && pnpm --filter @vh/database migrate:dev",
+    "db:deploy": "pnpm env:sync && pnpm --filter @vh/database migrate:deploy",
     "db:seed": "pnpm --filter @vh/database seed",
-    "db:studio": "pnpm --filter @vh/database studio"
+    "db:studio": "pnpm env:sync && pnpm --filter @vh/database studio"
   },
   "devDependencies": {
     "turbo": "^2.5.4",

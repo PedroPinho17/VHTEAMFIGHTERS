@@ -9,6 +9,8 @@ import {
 import { fromNodeHeaders } from "better-auth/node";
 import { auth, SessionUser } from "./auth";
 
+const ADMIN_ROLES = new Set(["ADMIN", "EDITOR"]);
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -35,8 +37,8 @@ export class AdminGuard implements CanActivate {
     if (!session?.user) {
       throw new UnauthorizedException();
     }
-    const role = (session.user as SessionUser).role ?? "EDITOR";
-    if (role !== "ADMIN" && role !== "EDITOR") {
+    const role = (session.user as SessionUser).role;
+    if (!role || !ADMIN_ROLES.has(role)) {
       throw new ForbiddenException();
     }
     req.user = session.user;

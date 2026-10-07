@@ -6,6 +6,13 @@ import { EnrollmentStatus } from "@vh/database";
 
 export const ENROLLMENT_QUEUE = "enrollment-email";
 
+function smtpSecure(port: number): boolean {
+  const raw = process.env.SMTP_SECURE?.trim().toLowerCase();
+  if (raw === "true" || raw === "1") return true;
+  if (raw === "false" || raw === "0") return false;
+  return port === 465;
+}
+
 @Processor(ENROLLMENT_QUEUE)
 export class EnrollmentEmailProcessor extends WorkerHost {
   constructor(private readonly prisma: PrismaService) {
@@ -16,31 +23,37 @@ export class EnrollmentEmailProcessor extends WorkerHost {
     const enrollment = await this.prisma.enrollment.findUnique({
       where: { id: job.data.enrollmentId },
     });
-    if (!enrollment) return;
+    if (!enrollment || enrollment.erasedAt) return;
 
+    const notifyTo = process.env.ENROLLMENT_NOTIFY_TO?.trim();
+    if (!notifyTo) {
+      throw new Error("ENROLLMENT_NOTIFY_TO não está definido — aviso de inscrição não enviado.");
+    }
+
+    const port = Number(process.env.SMTP_PORT ?? 587);
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST ?? "localhost",
-      port: Number(process.env.SMTP_PORT ?? 1025),
-      secure: false,
-      auth:
-        process.env.SMTP_USER
-          ? {
-              user: process.env.SMTP_USER,
-              pass: process.env.SMTP_PASS,
-            }
-          : undefined,
+      port,
+      secure: smtpSecure(port),
+      auth: process.env.SMTP_USER
+        ? {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          }
+        : undefined,
     });
 
     try {
       await transporter.sendMail({
         from: process.env.SMTP_FROM ?? "noreply@vhteamfighters.local",
-        to: process.env.ENROLLMENT_NOTIFY_TO ?? "admin@vhteamfighters.local",
+        to: notifyTo,
         subject: `Nova inscrição: ${enrollment.name}`,
         text: [
           `Nome: ${enrollment.name}`,
           `Email: ${enrollment.email}`,
           `Telefone: ${enrollment.phone ?? "-"}`,
           `Mensagem: ${enrollment.message ?? "-"}`,
+          `Consentimento privacidade: ${enrollment.privacyConsent ? "sim" : "não"}`,
         ].join("\n"),
       });
       await this.prisma.enrollment.update({

@@ -28,6 +28,8 @@ const cards = [
 
 export default function AdminDashboardPage() {
   const { data: session } = authClient.useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role ?? "EDITOR";
+  const visible = cards.filter((c) => c.href !== "/admin/security" || role === "ADMIN");
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -37,7 +39,7 @@ export default function AdminDashboardPage() {
         {session?.user.email ? ` · ${session.user.email}` : ""}
       </p>
       <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((c) => {
+        {visible.map((c) => {
           const Icon = c.icon;
           return (
             <Link

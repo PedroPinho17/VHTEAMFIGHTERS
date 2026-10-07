@@ -1,6 +1,12 @@
 import { publicGet } from "@/lib/api";
 import { EnrollmentForm } from "@/components/enrollment-form";
 import { dayLabels } from "@/lib/utils";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contactos",
+  description: "Morada, horários e inscrição na VH Team Fighters em Lobão.",
+};
 
 type OpeningHour = {
   day: string;
@@ -65,7 +71,7 @@ export default async function ContactosPage() {
                 </dd>
               </div>
             )}
-            {(contact?.instagramUrl || contact?.facebookUrl) && (
+            {(contact?.instagramUrl || contact?.facebookUrl || contact?.youtubeUrl) && (
               <div>
                 <dt className="uppercase tracking-widest text-ink/45">Redes</dt>
                 <dd className="mt-1 flex flex-wrap gap-4">
@@ -89,6 +95,16 @@ export default async function ContactosPage() {
                       Facebook
                     </a>
                   )}
+                  {contact.youtubeUrl && (
+                    <a
+                      href={contact.youtubeUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent-strong underline"
+                    >
+                      YouTube
+                    </a>
+                  )}
                 </dd>
               </div>
             )}
@@ -107,6 +123,18 @@ export default async function ContactosPage() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {contact?.mapEmbedUrl && (
+            <div className="mt-10 overflow-hidden border border-ink/10">
+              <iframe
+                title="Mapa VH Team Fighters"
+                src={contact.mapEmbedUrl}
+                className="h-64 w-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
           )}
         </div>

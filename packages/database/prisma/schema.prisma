@@ -10,6 +10,8 @@ datasource db {
 enum UserRole {
   ADMIN
   EDITOR
+  /// Conta sem privilégios de backoffice (nunca deve aceder a /api/admin).
+  NONE
 }
 
 enum PersonRole {
@@ -31,20 +33,22 @@ enum EnrollmentStatus {
   NEW
   SENT
   FAILED
+  HANDLED
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  role          UserRole  @default(EDITOR)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  passkeys      Passkey[]
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  emailVerified      Boolean   @default(false)
+  image              String?
+  role               UserRole  @default(NONE)
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  sessions           Session[]
+  accounts           Account[]
+  passkeys           Passkey[]
 
   @@map("user")
 }
@@ -224,14 +228,17 @@ model ContactSettings {
 }
 
 model Enrollment {
-  id        String           @id @default(cuid())
-  name      String
-  email     String
-  phone     String?
-  message   String?
-  status    EnrollmentStatus @default(NEW)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id             String           @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  message        String?
+  status         EnrollmentStatus @default(NEW)
+  privacyConsent Boolean          @default(false)
+  consentAt      DateTime?
+  erasedAt       DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([status, createdAt])
 }

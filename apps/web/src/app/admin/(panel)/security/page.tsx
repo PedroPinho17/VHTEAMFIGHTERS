@@ -21,16 +21,13 @@ export default function AdminSecurityPage() {
   const [name, setName] = useState("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const role = (session?.user as { role?: string } | undefined)?.role ?? "EDITOR";
 
   async function load() {
     const { data, error: err } = await authClient.passkey.listUserPasskeys();
     if (err) throw new Error(err.message);
-    setPasskeys((data as PasskeyItem[]) ?? []);
+    setPasskeys(((data as unknown) as PasskeyItem[]) ?? []);
   }
-
-  useEffect(() => {
-    if (session) load().catch((e) => setError(e.message));
-  }, [session]);
 
   async function registerPasskey() {
     setError("");
@@ -47,11 +44,30 @@ export default function AdminSecurityPage() {
     await load();
   }
 
+  useEffect(() => {
+    if (!isPending && session && role !== "ADMIN") {
+      router.replace("/admin");
+    }
+  }, [isPending, session, role, router]);
+
+  useEffect(() => {
+    if (session && role === "ADMIN") load().catch((e) => setError(e.message));
+  }, [session, role]);
+
+  if (isPending || !session) {
+    return <p className="text-cream/60">A carregar...</p>;
+  }
+
+  if (role !== "ADMIN") {
+    return <p className="text-cream/60">Apenas administradores podem gerir segurança.</p>;
+  }
+
   return (
     <div className="max-w-xl space-y-6">
       <h1 className="font-display text-5xl">Segurança · WebAuthn</h1>
-      <p className="text-ink/70">
-        Regista uma passkey (Windows Hello, Touch ID, Face ID ou chave de segurança) para login sem password.
+      <p className="text-cream/60">
+        Regista uma passkey (Windows Hello, Touch ID, Face ID ou chave de segurança) para login sem
+        password.
       </p>
       <div className="space-y-3 border border-ink/10 bg-white text-ink p-5">
         <Label htmlFor="pk-name">Nome do dispositivo (opcional)</Label>
@@ -69,7 +85,10 @@ export default function AdminSecurityPage() {
       </div>
       <ul className="space-y-2">
         {passkeys.map((pk) => (
-          <li key={pk.id} className="flex items-center justify-between border border-ink/10 bg-white text-ink p-4">
+          <li
+            key={pk.id}
+            className="flex items-center justify-between border border-ink/10 bg-white text-ink p-4"
+          >
             <div>
               <p className="font-semibold">{pk.name || "Passkey"}</p>
               <p className="text-xs text-ink/50">
@@ -89,7 +108,7 @@ export default function AdminSecurityPage() {
             </Button>
           </li>
         ))}
-        {!passkeys.length && <p className="text-sm text-ink/50">Ainda sem passkeys registadas.</p>}
+        {!passkeys.length && <p className="text-sm text-cream/50">Ainda sem passkeys registadas.</p>}
       </ul>
     </div>
   );

@@ -5,9 +5,9 @@ import { authClient } from "@/lib/auth-client";
 import { adminFetch } from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { KrajeeFileInput } from "@/components/krajee-file-input";
+import { MarkdownEditor } from "@/components/markdown-editor";
 import { mediaUrl } from "@/lib/utils";
 
 type Post = {
@@ -34,6 +34,7 @@ const empty = {
   slug: "",
   excerpt: "",
   body: "",
+  published: true,
 };
 
 export default function AdminPostsPage() {
@@ -66,6 +67,7 @@ export default function AdminPostsPage() {
       slug: p.slug,
       excerpt: p.excerpt ?? "",
       body: p.body,
+      published: p.published,
     });
     setCoverKey(p.coverKey ?? null);
     setMsg("");
@@ -80,7 +82,8 @@ export default function AdminPostsPage() {
       excerpt: form.excerpt || null,
       body: form.body,
       coverKey: coverKey,
-      published: true,
+      published: form.published,
+      publishedAt: form.published ? new Date().toISOString() : undefined,
     };
     try {
       if (editingId) {
@@ -142,10 +145,9 @@ export default function AdminPostsPage() {
           value={form.excerpt}
           onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))}
         />
-        <Label>Corpo (markdown)</Label>
-        <Textarea
+        <MarkdownEditor
           value={form.body}
-          onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+          onChange={(body) => setForm((f) => ({ ...f, body }))}
           required
         />
         <KrajeeFileInput
@@ -155,8 +157,18 @@ export default function AdminPostsPage() {
           onChange={setCoverKey}
           optional
         />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.published}
+            onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
+          />
+          Publicado no site
+        </label>
         <div className="flex gap-2">
-          <Button type="submit">{editingId ? "Guardar alterações" : "Publicar"}</Button>
+          <Button type="submit">
+            {editingId ? "Guardar alterações" : form.published ? "Publicar" : "Guardar rascunho"}
+          </Button>
           {editingId && (
             <Button type="button" variant="outline" onClick={resetForm}>
               Cancelar
@@ -178,7 +190,9 @@ export default function AdminPostsPage() {
                 <img src={mediaUrl(p.coverKey)!} alt="" className="h-12 w-12 object-cover" />
               ) : null}
               <span>
-                {p.title} <span className="text-ink/50">/{p.slug}</span>
+                {p.title}{" "}
+                <span className="text-ink/50">/{p.slug}</span>
+                {!p.published && <span className="ml-2 text-xs text-ink/45">rascunho</span>}
               </span>
             </div>
             <div className="flex shrink-0 gap-2">

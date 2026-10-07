@@ -2,5 +2,5 @@
 set -e
 cd /app/packages/database
 npx prisma migrate deploy
-cd /app
+cd /app/apps/api
 node dist/main.js
