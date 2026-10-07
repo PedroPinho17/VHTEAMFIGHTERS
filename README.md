@@ -45,11 +45,13 @@ Definidas só no teu `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`). **Não há passw
 ## Segurança (resumo)
 
 - Registo público desactivado; papel por omissão `NONE`
-- Helmet, limites de body, rate limit + honeypot nas inscrições
+- Helmet, limites de body, rate limit (Redis + `req.ip`) + honeypot nas inscrições
+- `mustChangePassword` obriga troca no primeiro login (`/admin/change-password`)
 - Validação de env em produção (auth, SMTP, S3, notify)
 - RGPD: consentimento, `/privacidade`, export/erase no admin
 
-Operação: [docs/RUNBOOK.md](docs/RUNBOOK.md)
+Operação: [docs/RUNBOOK.md](docs/RUNBOOK.md) · CI: `.github/workflows/ci.yml`  
+Ruleset do `main`: Enforcement **Active** + checks `audit` / `test` / `docker` obrigatórios.
 
 ## Coolify
 

@@ -16,7 +16,10 @@ export function LoginForm() {
 
   useEffect(() => {
     if (!isPending && session) {
-      router.replace("/admin");
+      const mustChange = Boolean(
+        (session.user as { mustChangePassword?: boolean }).mustChangePassword,
+      );
+      router.replace(mustChange ? "/admin/change-password" : "/admin");
     }
   }, [isPending, session, router]);
 
@@ -34,8 +37,11 @@ export function LoginForm() {
   }, []);
 
   async function goAdmin() {
-    await authClient.getSession();
-    router.replace("/admin");
+    const { data } = await authClient.getSession();
+    const mustChange = Boolean(
+      (data?.user as { mustChangePassword?: boolean } | undefined)?.mustChangePassword,
+    );
+    router.replace(mustChange ? "/admin/change-password" : "/admin");
     router.refresh();
   }
 

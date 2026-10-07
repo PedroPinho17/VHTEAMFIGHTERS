@@ -57,13 +57,13 @@ jobs:
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_API_URL: http://localhost:3000
       INTERNAL_API_URL: http://localhost:3001
-      ADMIN_EMAIL: admin@ci.local
+      ADMIN_EMAIL: admin@vhteamfighters.pt
       ADMIN_PASSWORD: CiAdminPass12!
       ADMIN_NAME: CI Admin
-      ENROLLMENT_NOTIFY_TO: notify@ci.example.com
+      ENROLLMENT_NOTIFY_TO: notify@vhteamfighters.pt
       SMTP_HOST: localhost
       SMTP_PORT: "1025"
-      SMTP_FROM: noreply@ci.local
+      SMTP_FROM: noreply@vhteamfighters.pt
       S3_ENDPOINT: http://localhost:9014
       S3_PUBLIC_URL: http://localhost:9014
       S3_ACCESS_KEY: minioadmin

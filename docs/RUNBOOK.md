@@ -57,11 +57,14 @@ Usar a ferramenta do fornecedor (AWS CLI, rclone, consola R2) para sync periódi
 
 ## Protecção do `main`
 
-No GitHub: Settings → Branches → Branch protection em `main`:
+Ruleset: https://github.com/PedroPinho17/VHTEAMFIGHTERS/settings/rules
 
-- Require pull request before merging
-- Require status checks (CI) to pass
-- Do not allow force pushes
+Confirmar **Enforcement status = Active** e checks obrigatórios:
+
+- `audit` · `test` · `docker`
+
+Também: require PR before merging, block force pushes, restrict deletions.
+Sem Active, o merge com CI vermelho volta a ser possível.
 
 ## Incidentes
 

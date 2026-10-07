@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { publicGet } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 const siteUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 type Post = { slug: string; publishedAt?: string | null; updatedAt?: string };

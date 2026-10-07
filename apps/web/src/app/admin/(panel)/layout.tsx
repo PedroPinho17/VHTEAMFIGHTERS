@@ -40,7 +40,11 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const role = (session?.user as { role?: string } | undefined)?.role ?? "EDITOR";
+  const user = session?.user as
+    | { role?: string; mustChangePassword?: boolean }
+    | undefined;
+  const role = user?.role ?? "NONE";
+  const mustChangePassword = Boolean(user?.mustChangePassword);
   const visibleSections = sections.filter((s) => !s.adminOnly || role === "ADMIN");
 
   useEffect(() => {
@@ -50,10 +54,16 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
   }, [isPending, session, router]);
 
   useEffect(() => {
+    if (!isPending && session && mustChangePassword) {
+      router.replace("/admin/change-password");
+    }
+  }, [isPending, session, mustChangePassword, router]);
+
+  useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  if (isPending || !session) {
+  if (isPending || !session || mustChangePassword) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#111418] text-cream/60">
         A verificar sessão...

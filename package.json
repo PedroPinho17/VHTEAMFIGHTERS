@@ -11,7 +11,7 @@
     "docker:down": "docker compose --profile local down",
     "test": "pnpm --filter @vh/api test",
     "typecheck": "pnpm --filter @vh/api typecheck && pnpm --filter web exec tsc --noEmit",
-    "env:sync": "node -e \"require('fs').copyFileSync('.env','packages/database/.env'); console.log('Synced .env → packages/database/.env')\"",
+    "env:sync": "node scripts/env-sync.mjs",
     "db:generate": "pnpm --filter @vh/database generate",
     "db:migrate": "pnpm env:sync && pnpm --filter @vh/database migrate:dev",
     "db:deploy": "pnpm env:sync && pnpm --filter @vh/database migrate:deploy",
