@@ -25,6 +25,8 @@ export default function AdminGalleryPage() {
   const [imageKey, setImageKey] = useState<string | null>(null);
   const [alt, setAlt] = useState("");
   const [album, setAlbum] = useState("");
+  const [sortOrder, setSortOrder] = useState("0");
+  const [published, setPublished] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -41,6 +43,8 @@ export default function AdminGalleryPage() {
     setImageKey(null);
     setAlt("");
     setAlbum("");
+    setSortOrder("0");
+    setPublished(true);
     setMsg("");
   }
 
@@ -49,6 +53,8 @@ export default function AdminGalleryPage() {
     setImageKey(item.imageKey);
     setAlt(item.alt ?? "");
     setAlbum(item.album ?? "");
+    setSortOrder(String(item.sortOrder ?? 0));
+    setPublished(item.published ?? true);
     setMsg("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -64,7 +70,8 @@ export default function AdminGalleryPage() {
       imageKey,
       alt: alt || null,
       album: album || null,
-      published: true,
+      sortOrder: Number(sortOrder) || 0,
+      published,
     };
     try {
       if (editingId) {
@@ -122,6 +129,16 @@ export default function AdminGalleryPage() {
         <Input value={alt} onChange={(e) => setAlt(e.target.value)} />
         <Label>Álbum</Label>
         <Input value={album} onChange={(e) => setAlbum(e.target.value)} placeholder="opcional" />
+        <Label>Ordem</Label>
+        <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={published}
+            onChange={(e) => setPublished(e.target.checked)}
+          />
+          Publicado no site
+        </label>
         <div className="flex gap-2">
           <Button type="submit" disabled={busy || !imageKey}>
             {busy ? "A guardar..." : editingId ? "Guardar alterações" : "Adicionar à galeria"}

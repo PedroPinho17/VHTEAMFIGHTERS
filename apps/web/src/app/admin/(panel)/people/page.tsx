@@ -23,11 +23,13 @@ type Person = {
 };
 
 const empty = {
-  role: "FIGHTER" as const,
+  role: "FIGHTER" as "FIGHTER" | "COACH",
   name: "",
   bio: "",
   weightKg: "",
   titles: "",
+  sortOrder: "0",
+  published: true,
 };
 
 export default function AdminPeoplePage() {
@@ -61,6 +63,8 @@ export default function AdminPeoplePage() {
       bio: p.bio,
       weightKg: p.weightKg != null ? String(p.weightKg) : "",
       titles: (p.titles ?? []).join(", "),
+      sortOrder: String(p.sortOrder ?? 0),
+      published: p.published,
     });
     setPhotoKey(p.photoKey ?? null);
     setMsg("");
@@ -79,7 +83,8 @@ export default function AdminPeoplePage() {
         .map((t) => t.trim())
         .filter(Boolean),
       photoKey: photoKey,
-      published: true,
+      sortOrder: Number(form.sortOrder) || 0,
+      published: form.published,
     };
     try {
       if (editingId) {
@@ -158,6 +163,20 @@ export default function AdminPeoplePage() {
           onChange={(e) => setForm((f) => ({ ...f, titles: e.target.value }))}
         />
         <KrajeeFileInput label="Foto" folder="people" value={photoKey} onChange={setPhotoKey} optional />
+        <Label>Ordem</Label>
+        <Input
+          type="number"
+          value={form.sortOrder}
+          onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))}
+        />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.published}
+            onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
+          />
+          Publicado no site
+        </label>
         <div className="flex gap-2">
           <Button type="submit">{editingId ? "Guardar alterações" : "Adicionar"}</Button>
           {editingId && (
@@ -183,6 +202,7 @@ export default function AdminPeoplePage() {
               <div>
                 <p className="font-semibold">
                   {p.name} · {p.role}
+                  {!p.published && <span className="ml-2 text-xs text-ink/45">rascunho</span>}
                 </p>
                 <p className="text-sm text-ink/70">{p.bio}</p>
               </div>

@@ -8,53 +8,56 @@ Site + CMS para a equipa de kickboxing **VH Team Fighters**.
 - NestJS (API, Better Auth, BullMQ)
 - PostgreSQL + Prisma
 - Redis + BullMQ (emails de inscrição)
-- S3 / MinIO (media)
-- shadcn-style UI
+- S3 / MinIO local (media)
 - Docker / Coolify
 - Sentry (opcional via DSN)
 
 ## Arranque local
 
 ```bash
-# 1. Infra (só se Postgres/Redis/MinIO não estiverem a correr)
-pnpm docker:up
-
-# 2. Arrancar API + Web
-pnpm dev
-```
-
-Na 1ª vez (ou máquina nova):
-
-```bash
 pnpm install
-cp .env.example .env   # se ainda não existir
+cp .env.example .env
+# Preencher ADMIN_PASSWORD (≥12 chars), ENROLLMENT_NOTIFY_TO, BETTER_AUTH_SECRET
+pnpm docker:up
 pnpm db:migrate
 pnpm db:seed
-pnpm docker:up
 pnpm dev
 ```
 
-Portas locais: Postgres `5433` · Redis `6380` · MinIO `9010`
+Portas locais (só `127.0.0.1`): Postgres `5435` · Redis `6382` · MinIO `9014` · Mailpit `8025`
 
-Auth: o browser fala com `/api` no mesmo origem (`:3000`); o Next faz proxy para a Nest (`:3001`) — evita login duplo por cookies cross-port.
+O `docker:up` activa o perfil `local` (MinIO + Mailpit). Em produção o object storage é externo (S3/R2).
+
+Auth: o browser fala com `/api` na mesma origem (`:3000`); o Next faz proxy para a Nest (`:3001`).
 
 - Site: http://localhost:3000
 - Admin: http://localhost:3000/admin/login
-- API: http://localhost:3001/api/health
-- Mailpit: http://localhost:8025
+- Privacidade: http://localhost:3000/privacidade
+- API health / ready: http://localhost:3001/api/health · `/api/ready`
+
+Smoke (API a correr): `pnpm smoke`  
+Testes API: `pnpm --filter @vh/api test`
 
 ### Credenciais seed
 
-- Email: `admin@vhteamfighters.local`
-- Password: `Admin123!`
+Definidas só no teu `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`). **Não há password por omissão no repositório.**
+
+## Segurança (resumo)
+
+- Registo público desactivado; papel por omissão `NONE`
+- Helmet, limites de body, rate limit + honeypot nas inscrições
+- Validação de env em produção (auth, SMTP, S3, notify)
+- RGPD: consentimento, `/privacidade`, export/erase no admin
+
+Operação: [docs/RUNBOOK.md](docs/RUNBOOK.md)
 
 ## Coolify
 
-1. Deploy serviços Postgres, Redis e S3 (ou MinIO).
-2. Deploy `apps/api` com Dockerfile `apps/api/Dockerfile` (porta 3001).
-3. Deploy `apps/web` com Dockerfile `apps/web/Dockerfile` (porta 3000).
-4. Proxy: `/` → web, `/api` → api (mesmo domínio para cookies Better Auth).
-5. Definir env vars a partir de `.env.example` (`SENTRY_DSN`, `BETTER_AUTH_SECRET`, etc.).
+1. Deploy Postgres, Redis e S3 (ou MinIO gerido) — **sem** defaults `minioadmin` em produção.
+2. Deploy `apps/api` (`apps/api/Dockerfile`, porta 3001).
+3. Deploy `apps/web` (`apps/web/Dockerfile`, porta 3000).
+4. Proxy: `/` → web, `/api` → api (mesmo domínio para cookies).
+5. Env a partir de `.env.example` com segredos reais (`ENROLLMENT_NOTIFY_TO` = email da equipa).
 
 ## Estrutura
 
@@ -63,4 +66,5 @@ apps/web          # Next.js
 apps/api          # NestJS
 packages/database # Prisma
 packages/shared   # tipos partilhados
+docs/RUNBOOK.md   # operação e backups
 ```

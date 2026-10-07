@@ -1,14 +1,44 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { publicGet } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
+import { markdownToHtml } from "@/lib/markdown";
 
 type Post = {
   title: string;
   body: string;
+  excerpt?: string | null;
   publishedAt?: string | null;
   coverKey?: string | null;
 };
+
+async function loadPost(slug: string) {
+  try {
+    return await publicGet<Post>(`/api/public/posts/${slug}`, 30);
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await loadPost(slug);
+  if (!post) return { title: "Notícia" };
+  return {
+    title: post.title,
+    description: post.excerpt ?? undefined,
+    openGraph: {
+      title: post.title,
+      description: post.excerpt ?? undefined,
+      images: mediaUrl(post.coverKey) ? [{ url: mediaUrl(post.coverKey)! }] : undefined,
+    },
+  };
+}
 
 export default async function NoticiaDetailPage({
   params,
@@ -16,15 +46,11 @@ export default async function NoticiaDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  let post: Post | null = null;
-  try {
-    post = await publicGet<Post>(`/api/public/posts/${slug}`, 30);
-  } catch {
-    notFound();
-  }
+  const post = await loadPost(slug);
   if (!post) notFound();
 
   const cover = mediaUrl(post.coverKey);
+  const html = markdownToHtml(post.body);
 
   return (
     <div className="bg-cream pt-10 text-ink md:pt-14">
@@ -42,9 +68,10 @@ export default async function NoticiaDetailPage({
             {new Date(post.publishedAt).toLocaleDateString("pt-PT")}
           </p>
         )}
-        <div className="prose-vh mt-10 whitespace-pre-wrap text-lg leading-relaxed text-ink/80">
-          {post.body}
-        </div>
+        <div
+          className="prose-vh mt-10 text-lg leading-relaxed text-ink/80"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
       </article>
     </div>
   );

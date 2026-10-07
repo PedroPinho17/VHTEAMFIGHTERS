@@ -1,6 +1,16 @@
 import Link from "next/link";
 import { publicGet } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Início",
+  description: "Kickboxing com atitude — treinos, lutadores e eventos da VH Team Fighters.",
+  openGraph: {
+    title: "VH Team Fighters",
+    description: "Kickboxing com atitude, disciplina e resultados.",
+  },
+};
 
 type Home = {
   heroTitle: string;
@@ -13,7 +23,13 @@ type Home = {
   heroImageKey?: string | null;
 };
 
-type Person = { id: string; name: string; role: string; bio: string; photoKey?: string | null };
+type Person = {
+  id: string;
+  name: string;
+  role: string;
+  bio: string;
+  photoKey?: string | null;
+};
 type Event = { id: string; title: string; date: string; location?: string | null };
 
 async function getHome(): Promise<Home | null> {
@@ -43,13 +59,15 @@ export default async function HomePage() {
               ? `url(${heroImage})`
               : "linear-gradient(135deg, #1a1f27 0%, #0d0f12 45%, #3d1a0a 100%)",
           }}
+          role={heroImage ? "img" : undefined}
+          aria-label={heroImage ? home?.heroTitle ?? "VH Team Fighters" : undefined}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/85 to-ink/35" />
         <div className="animate-glow absolute -right-20 top-24 h-72 w-72 rounded-full bg-accent/25 blur-3xl" />
         <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-5 pb-20 pt-32">
-          <p className="animate-rise font-display text-6xl leading-none tracking-wide text-cream md:text-8xl lg:text-9xl">
+          <h1 className="animate-rise font-display text-6xl leading-none tracking-wide text-cream md:text-8xl lg:text-9xl">
             {home?.heroTitle ?? "VH Team Fighters"}
-          </p>
+          </h1>
           <p className="animate-rise-delay mt-4 max-w-xl text-lg text-cream/80 md:text-xl">
             {home?.heroSubtitle ?? "Kickboxing com atitude, disciplina e resultados"}
           </p>
@@ -90,14 +108,33 @@ export default async function HomePage() {
               Ver todos
             </Link>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {fighters.slice(0, 3).map((p) => (
-              <article key={p.id} className="border border-white/10 bg-ink/40 p-5">
-                <h3 className="font-display text-3xl text-cream">{p.name}</h3>
-                <p className="mt-3 line-clamp-3 text-sm text-cream/65">{p.bio}</p>
-              </article>
-            ))}
-          </div>
+          {fighters.length ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {fighters.slice(0, 3).map((p) => {
+                const photo = mediaUrl(p.photoKey);
+                return (
+                  <article key={p.id} className="overflow-hidden border border-white/10 bg-ink/40">
+                    <div
+                      className="h-48 bg-cover bg-center"
+                      style={{
+                        backgroundImage: photo
+                          ? `url(${photo})`
+                          : "linear-gradient(160deg,#2a2f38,#12151a)",
+                      }}
+                      role={photo ? "img" : undefined}
+                      aria-label={photo ? p.name : undefined}
+                    />
+                    <div className="p-5">
+                      <h3 className="font-display text-3xl text-cream">{p.name}</h3>
+                      <p className="mt-3 line-clamp-3 text-sm text-cream/65">{p.bio}</p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-cream/60">Em breve: conhece os atletas da equipa.</p>
+          )}
         </div>
       </section>
 
@@ -118,7 +155,7 @@ export default async function HomePage() {
                 </span>
               </Link>
             ))}
-            {!events.length && <p className="text-cream/60">Sem eventos publicados.</p>}
+            {!events.length && <p className="text-cream/60">Sem eventos publicados de momento.</p>}
           </div>
         </div>
       </section>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { publicGet } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 
@@ -14,18 +15,41 @@ type Event = {
   imageKey?: string | null;
 };
 
+async function loadEvent(id: string) {
+  try {
+    return await publicGet<Event>(`/api/public/events/${id}`, 30);
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const event = await loadEvent(id);
+  if (!event) return { title: "Evento" };
+  const img = mediaUrl(event.imageKey);
+  return {
+    title: event.title,
+    description: event.description ?? undefined,
+    openGraph: {
+      title: event.title,
+      description: event.description ?? undefined,
+      images: img ? [{ url: img }] : undefined,
+    },
+  };
+}
+
 export default async function EventoDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  let event: Event | null = null;
-  try {
-    event = await publicGet<Event>(`/api/public/events/${id}`, 30);
-  } catch {
-    notFound();
-  }
+  const event = await loadEvent(id);
   if (!event) notFound();
 
   const img = mediaUrl(event.imageKey);

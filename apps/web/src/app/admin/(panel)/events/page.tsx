@@ -35,6 +35,7 @@ const empty = {
   description: "",
   opponent: "",
   result: "",
+  published: true,
 };
 
 export default function AdminEventsPage() {
@@ -69,6 +70,7 @@ export default function AdminEventsPage() {
       description: e.description ?? "",
       opponent: e.opponent ?? "",
       result: e.result ?? "",
+      published: e.published ?? true,
     });
     setImageKey(e.imageKey ?? null);
     setMsg("");
@@ -85,7 +87,7 @@ export default function AdminEventsPage() {
       opponent: form.opponent || null,
       result: form.result || null,
       imageKey: imageKey,
-      published: true,
+      published: form.published,
     };
     try {
       if (editingId) {
@@ -170,6 +172,14 @@ export default function AdminEventsPage() {
           onChange={setImageKey}
           optional
         />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.published}
+            onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
+          />
+          Publicado no site
+        </label>
         <div className="flex gap-2">
           <Button type="submit">{editingId ? "Guardar alterações" : "Adicionar"}</Button>
           {editingId && (

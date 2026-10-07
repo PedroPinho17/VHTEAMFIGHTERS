@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { adminFetch } from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,7 @@ type Home = {
 };
 
 export default function AdminHomeContentPage() {
-  const router = useRouter();
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session } = authClient.useSession();
   const [home, setHome] = useState<Home | null>(null);
   const [logoKey, setLogoKey] = useState<string | null>(null);
   const [faviconKey, setFaviconKey] = useState<string | null>(null);

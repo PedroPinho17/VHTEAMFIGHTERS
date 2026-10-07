@@ -16,6 +16,8 @@ type Slot = {
   modality: string;
   level?: string | null;
   note?: string | null;
+  sortOrder?: number;
+  published?: boolean;
 };
 
 const empty = {
@@ -24,6 +26,8 @@ const empty = {
   endTime: "20:30",
   modality: "",
   level: "",
+  sortOrder: "0",
+  published: true,
 };
 
 export default function AdminSchedulePage() {
@@ -55,6 +59,8 @@ export default function AdminSchedulePage() {
       endTime: s.endTime,
       modality: s.modality,
       level: s.level ?? "",
+      sortOrder: String(s.sortOrder ?? 0),
+      published: s.published ?? true,
     });
     setMsg("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -68,7 +74,8 @@ export default function AdminSchedulePage() {
       endTime: form.endTime,
       modality: form.modality,
       level: form.level || null,
-      published: true,
+      sortOrder: Number(form.sortOrder) || 0,
+      published: form.published,
     };
     try {
       if (editingId) {
@@ -150,6 +157,20 @@ export default function AdminSchedulePage() {
           value={form.level}
           onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
         />
+        <Label>Ordem</Label>
+        <Input
+          type="number"
+          value={form.sortOrder}
+          onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))}
+        />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.published}
+            onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
+          />
+          Publicado no site
+        </label>
         <div className="flex gap-2">
           <Button type="submit">{editingId ? "Guardar alterações" : "Adicionar"}</Button>
           {editingId && (
