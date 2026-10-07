@@ -16,7 +16,8 @@ jobs:
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-            | sh -s -- -b /usr/local/bin v0.66.0
+            | sh -s -- -b "$HOME/.local/bin" v0.66.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Dependency vuln scan (Trivy HIGH/CRITICAL)
         run: |
           set -euo pipefail
@@ -34,7 +35,7 @@ jobs:
             | "\(.Severity)|\(.PkgName)|\(.VulnerabilityID)|installed=\(.InstalledVersion)|fixed=\(.FixedVersion // "-")"
           ' /tmp/trivy.json | while IFS= read -r line; do
             echo "::error title=Trivy::$line"
-          done
+          done || true
           count="$(jq '[.Results[]?.Vulnerabilities // [] | .[]] | length' /tmp/trivy.json)"
           echo "Remaining HIGH/CRITICAL (fixed available): $count"
           test "$count" -eq 0
