@@ -32,7 +32,7 @@ describe("MeController", () => {
     controller = new MeController(prisma as never);
   });
 
-  const user = { id: "u1", email: "admin@example.com" };
+  const user = { id: "u1", email: "admin@example.com", name: "Admin" };
   const req = { headers: {} } as never;
   const strong = "MySecurePass12!";
 
