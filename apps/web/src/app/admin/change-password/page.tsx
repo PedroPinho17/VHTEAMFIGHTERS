@@ -11,6 +11,7 @@ export default function ChangePasswordPage() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
   const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const mustChange = Boolean(
@@ -18,16 +19,16 @@ export default function ChangePasswordPage() {
   );
 
   useEffect(() => {
-    if (!isPending && !session) {
+    if (!isPending && !session && !done) {
       router.replace("/admin/login");
     }
-  }, [isPending, session, router]);
+  }, [isPending, session, router, done]);
 
   useEffect(() => {
-    if (!isPending && session && !mustChange) {
+    if (!isPending && session && !mustChange && !done) {
       router.replace("/admin");
     }
-  }, [isPending, session, mustChange, router]);
+  }, [isPending, session, mustChange, router, done]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,6 +48,11 @@ export default function ChangePasswordPage() {
       setError("A nova password deve ter pelo menos 12 caracteres.");
       return;
     }
+    if (newPassword === currentPassword) {
+      setLoading(false);
+      setError("A nova password não pode ser igual à password actual.");
+      return;
+    }
     try {
       const res = await fetch("/api/admin/me/change-password", {
         method: "POST",
@@ -56,20 +62,45 @@ export default function ChangePasswordPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        const msg = data?.message;
         throw new Error(
-          typeof data?.message === "string"
-            ? data.message
-            : "Não foi possível alterar a password.",
+          typeof msg === "string"
+            ? msg
+            : Array.isArray(msg)
+              ? msg.join(", ")
+              : "Não foi possível alterar a password.",
         );
       }
-      await authClient.getSession();
-      router.replace("/admin");
-      router.refresh();
+      await authClient.signOut();
+      setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (done) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0c0e12] px-4">
+        <div className="w-full max-w-md space-y-4 rounded-xl border border-white/10 bg-[#171b21] p-7 text-center">
+          <h1 className="font-display text-3xl text-cream">Password alterada</h1>
+          <p className="text-sm text-cream/60">
+            Inicia sessão com a nova password.
+          </p>
+          <Button
+            type="button"
+            className="w-full"
+            onClick={() => {
+              router.replace("/admin/login");
+              router.refresh();
+            }}
+          >
+            Ir para o login
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (isPending || !session) {
@@ -89,6 +120,7 @@ export default function ChangePasswordPage() {
         <h1 className="font-display text-3xl text-cream">Alterar password</h1>
         <p className="text-sm text-cream/60">
           A conta foi criada com uma password temporária. Define uma nova antes de continuar.
+          Depois terás de iniciar sessão com a nova password.
         </p>
         <div className="space-y-2">
           <Label htmlFor="currentPassword">Password actual</Label>

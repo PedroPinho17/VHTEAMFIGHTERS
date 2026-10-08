@@ -7,10 +7,12 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
-      include: [
-        "src/common/rate-limit.ts",
-        "src/env.ts",
-        "src/enrollments/enrollments.service.ts",
+      include: ["src/**/*.ts"],
+      exclude: [
+        "src/**/*.spec.ts",
+        "src/main.ts",
+        "src/**/*.module.ts",
+        "src/**/*.dto.ts",
       ],
       thresholds: {
         lines: 70,

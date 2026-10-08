@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { SlidingWindowRateLimiter, clientIp, RedisRateLimiter } from "./rate-limit";
 
 describe("clientIp", () => {
@@ -29,6 +29,26 @@ describe("SlidingWindowRateLimiter", () => {
 describe("RedisRateLimiter", () => {
   it("falls back to memory when redis is null", async () => {
     const limiter = new RedisRateLimiter(null, 1, 60_000, "t");
+    expect(await limiter.allow("ip")).toBe(true);
+    expect(await limiter.allow("ip")).toBe(false);
+  });
+
+  it("uses redis incr and sets expiry on first hit", async () => {
+    const redis = {
+      incr: vi.fn().mockResolvedValue(1),
+      pexpire: vi.fn().mockResolvedValue(1),
+    };
+    const limiter = new RedisRateLimiter(redis as never, 2, 60_000, "enroll");
+    expect(await limiter.allow("1.2.3.4")).toBe(true);
+    expect(redis.incr).toHaveBeenCalledWith("enroll:1.2.3.4");
+    expect(redis.pexpire).toHaveBeenCalledWith("enroll:1.2.3.4", 60_000);
+  });
+
+  it("falls back to memory when redis throws", async () => {
+    const redis = {
+      incr: vi.fn().mockRejectedValue(new Error("redis down")),
+    };
+    const limiter = new RedisRateLimiter(redis as never, 1, 60_000, "t");
     expect(await limiter.allow("ip")).toBe(true);
     expect(await limiter.allow("ip")).toBe(false);
   });

@@ -7,10 +7,12 @@ ARG NEXT_PUBLIC_API_URL=same-origin
 ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 ARG NEXT_PUBLIC_S3_PUBLIC_URL=
 ARG NEXT_PUBLIC_S3_BUCKET=vh-media
+ARG INTERNAL_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_S3_PUBLIC_URL=$NEXT_PUBLIC_S3_PUBLIC_URL
 ENV NEXT_PUBLIC_S3_BUCKET=$NEXT_PUBLIC_S3_BUCKET
+ENV INTERNAL_API_URL=$INTERNAL_API_URL
 ENV HUSKY=0
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_STANDALONE=true
@@ -38,10 +40,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-COPY --from=build /app/apps/web/.next/standalone ./
-COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build /app/apps/web/public ./apps/web/public
+COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
+COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
 
+USER node
 WORKDIR /app/apps/web
 EXPOSE 3000
 CMD ["node", "server.js"]
