@@ -25,7 +25,6 @@ jobs:
           trivyignores: .trivyignore
           format: table
 
-
   test:
     runs-on: ubuntu-latest
     services:
@@ -66,10 +65,11 @@ jobs:
       SMTP_HOST: localhost
       SMTP_PORT: "1025"
       SMTP_FROM: noreply@vhteamfighters.pt
-      S3_ENDPOINT: http://localhost:9014
-      S3_PUBLIC_URL: http://localhost:9014
-      S3_ACCESS_KEY: minioadmin
-      S3_SECRET_KEY: minioadmin
+      S3_ENDPOINT: http://localhost:3900
+      S3_PUBLIC_URL: http://localhost:3900
+      S3_REGION: garage
+      S3_ACCESS_KEY: GKabcdef0123456789abcdef01234567
+      S3_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
       S3_BUCKET: vh-media
       S3_FORCE_PATH_STYLE: "true"
       NODE_ENV: test
@@ -90,6 +90,8 @@ jobs:
         run: pnpm --filter @vh/api typecheck
       - name: Typecheck Web
         run: pnpm --filter web exec tsc --noEmit
+      - name: Lint API
+        run: pnpm --filter @vh/api lint
       - name: Lint Web
         run: pnpm --filter web lint
       - name: Test API
@@ -141,3 +143,159 @@ jobs:
             sleep $((i * 5))
           done
           exit 1
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write CI .env from .env.example
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          python3 - <<'PY'
+          from pathlib import Path
+          repl = {
+            "BETTER_AUTH_SECRET=change-me-to-a-long-random-secret-at-least-32-chars":
+              "BETTER_AUTH_SECRET=ci-compose-secret-with-at-least-32-characters",
+            "ADMIN_PASSWORD=": "ADMIN_PASSWORD=CiComposeAdmin12!",
+            "ENROLLMENT_NOTIFY_TO=": "ENROLLMENT_NOTIFY_TO=notify@vhteamfighters.pt",
+            "SMTP_HOST=localhost": "SMTP_HOST=smtp.example.invalid",
+            "NEXT_PUBLIC_API_URL=http://localhost:3000": "NEXT_PUBLIC_API_URL=same-origin",
+            "S3_ENDPOINT=http://localhost:3900": "S3_ENDPOINT=http://garage:3900",
+            "S3_PUBLIC_URL=http://localhost:3900": "S3_PUBLIC_URL=http://garage:3900",
+            "NEXT_PUBLIC_S3_PUBLIC_URL=http://localhost:3900": "NEXT_PUBLIC_S3_PUBLIC_URL=http://localhost:3900",
+          }
+          text = Path(".env").read_text(encoding="utf-8")
+          for a, b in repl.items():
+            text = text.replace(a, b, 1)
+          if "ALLOW_INSECURE_S3=" not in text:
+              text += "\nALLOW_INSECURE_S3=true\n"
+          if "GKabcdef0123456789abcdef01234567" not in text:
+              raise SystemExit("S3_ACCESS_KEY Garage no .env.example em falta")
+          if "GARAGE_RPC_SECRET=" not in text:
+              raise SystemExit("GARAGE_RPC_SECRET em falta no .env.example")
+          Path(".env").write_text(text, encoding="utf-8")
+          print("CI .env derived from .env.example OK")
+          PY
+
+      - name: Build and start stack
+        env:
+          COMPOSE_PROFILES: local
+        run: |
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci-smoke.yml \
+            up -d --build
+
+      - name: Wait for Garage S3
+        env:
+          COMPOSE_PROFILES: local
+        run: |
+          for i in $(seq 1 40); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3900/ || echo 000)
+            if echo "$code" | grep -Eq '^[12345][0-9][0-9]$'; then
+              echo "Garage S3 port open (HTTP $code)"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci-smoke.yml \
+            logs garage || true
+          exit 1
+
+      - name: Wait for API health
+        env:
+          COMPOSE_PROFILES: local
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3001/api/health >/dev/null; then
+              echo "API healthy"
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci-smoke.yml \
+            logs api web postgres redis garage || true
+          exit 1
+
+      - name: Wait for Web
+        env:
+          COMPOSE_PROFILES: local
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3000/ >/dev/null; then
+              echo "Web healthy"
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci-smoke.yml \
+            logs web api || true
+          exit 1
+
+      - name: API smoke (health, signup 400, enrollments 401/201)
+        env:
+          COMPOSE_PROFILES: local
+        run: |
+          set -euo pipefail
+          curl -sf http://127.0.0.1:3001/api/health | tee /tmp/vh-health.json
+          grep -q '"status":"ok"' /tmp/vh-health.json
+
+          # Registo público desactivado
+          code=$(curl -sS -o /tmp/vh-signup.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3001/api/auth/sign-up/email \
+            -H 'content-type: application/json' \
+            -d '{"email":"smoke@example.com","password":"SmokePass12!!","name":"Smoke"}')
+          echo "sign-up HTTP=$code"
+          cat /tmp/vh-signup.json || true
+          test "$code" = "400" -o "$code" = "403" -o "$code" = "422"
+
+          # Admin sem sessão
+          code=$(curl -sS -o /tmp/vh-enroll-admin.json -w '%{http_code}' \
+            http://127.0.0.1:3001/api/admin/enrollments)
+          echo "admin enrollments HTTP=$code"
+          test "$code" = "401"
+
+          # Inscrição pública
+          code=$(curl -sS -o /tmp/vh-enroll.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3001/api/public/enrollments \
+            -H 'content-type: application/json' \
+            -d '{"name":"Smoke User","email":"smoke.enroll@vhteamfighters.pt","phone":"912345678","message":"CI smoke","privacyConsent":true,"website":""}')
+          echo "enroll HTTP=$code"
+          cat /tmp/vh-enroll.json || true
+          test "$code" = "201" -o "$code" = "200"
+          echo "API smoke OK"
+
+      - name: Web smoke
+        env:
+          COMPOSE_PROFILES: local
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/web-home.html -w '%{http_code}' -L http://127.0.0.1:3000/)
+          test "$code" = "200"
+          grep -qiE 'VH|Fighters|Kickboxing|Inscri' /tmp/web-home.html || true
+          curl -sf http://127.0.0.1:3000/admin/login >/dev/null
+          echo "Web smoke OK"
+
+      - name: Teardown
+        if: always()
+        env:
+          COMPOSE_PROFILES: local
+        run: |
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci-smoke.yml \
+            down -v

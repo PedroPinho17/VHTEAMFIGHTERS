@@ -28,16 +28,17 @@ ENV NODE_ENV=production
 ENV HUSKY=0
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
-COPY --from=builder /app/package.json /app/pnpm-workspace.yaml /app/.npmrc ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/package.json ./apps/api/
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=builder /app/packages/database ./packages/database
-COPY --from=builder /app/packages/shared ./packages/shared
-COPY --from=builder /app/docker/api-entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh
+COPY --from=builder --chown=node:node /app/package.json /app/pnpm-workspace.yaml /app/.npmrc ./
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/apps/api/package.json ./apps/api/
+COPY --from=builder --chown=node:node /app/apps/api/dist ./apps/api/dist
+COPY --from=builder --chown=node:node /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=builder --chown=node:node /app/packages/database ./packages/database
+COPY --from=builder --chown=node:node /app/packages/shared ./packages/shared
+COPY --from=builder --chown=node:node /app/docker/api-entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh && chown node:node ./entrypoint.sh
 
+USER node
 WORKDIR /app/apps/api
 EXPOSE 3001
 CMD ["/app/entrypoint.sh"]

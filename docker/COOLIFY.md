@@ -4,8 +4,8 @@
 
 1. **PostgreSQL** — managed DB or Coolify Postgres
 2. **Redis** — managed Redis
-3. **S3** — MinIO service or external S3-compatible storage
-4. **API** — Dockerfile `apps/api/Dockerfile`, port `3001`
+3. **S3** — external S3-compatible storage (R2/Garage); não publicar MinIO com defaults
+4. **API** — Dockerfile `apps/api/Dockerfile`, port `3001` (só rede interna — não expor à Internet)
 5. **Web** — Dockerfile `apps/web/Dockerfile`, port `3000`
 
 ## Reverse proxy

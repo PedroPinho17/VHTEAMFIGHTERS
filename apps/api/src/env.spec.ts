@@ -28,6 +28,21 @@ describe("assertProductionEnv", () => {
     for (const key of keys) saved[key] = process.env[key];
   }
 
+  it("rejects empty ENROLLMENT_NOTIFY_TO in production", () => {
+    snapshot();
+    process.env.NODE_ENV = "production";
+    process.env.BETTER_AUTH_SECRET = "x".repeat(32);
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_FROM = "noreply@example.com";
+    process.env.ENROLLMENT_NOTIFY_TO = "";
+    process.env.S3_ENDPOINT = "https://s3.example.com";
+    process.env.S3_PUBLIC_URL = "https://cdn.example.com";
+    process.env.S3_ACCESS_KEY = "real-key";
+    process.env.S3_SECRET_KEY = "real-secret";
+    process.env.S3_BUCKET = "vh-media";
+    expect(() => assertProductionEnv()).toThrow(/ENROLLMENT_NOTIFY_TO/);
+  });
+
   it("rejects .local ENROLLMENT_NOTIFY_TO in production", () => {
     snapshot();
     process.env.NODE_ENV = "production";

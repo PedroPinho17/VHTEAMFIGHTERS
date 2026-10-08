@@ -17,7 +17,7 @@ const body = DM_Sans({
 export async function generateMetadata(): Promise<Metadata> {
   const { faviconUrl } = await getBranding();
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  // Always keep local /logo.png as fallback — CMS/S3 favicons can 404 if MinIO port drifts.
+  // Always keep local /logo.png as fallback — CMS/S3 favicons can 404 if storage is down.
   const icon = faviconUrl && !faviconUrl.includes(":9010") ? faviconUrl : "/logo.png";
   return {
     metadataBase: new URL(siteUrl),
