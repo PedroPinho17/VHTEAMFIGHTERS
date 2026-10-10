@@ -163,6 +163,7 @@ jobs:
           set -euo pipefail
           cp .env.example .env
           python3 - <<'PY'
+          import re
           import secrets
           from pathlib import Path
 
@@ -172,34 +173,34 @@ jobs:
           admin_pw = "CiComposeAdmin12!"
           notify = "notify@vhteamfighters.pt"
 
-          repl = {
-            "BETTER_AUTH_SECRET=change-me-to-a-long-random-secret-at-least-32-chars":
-              "BETTER_AUTH_SECRET=ci-compose-secret-with-at-least-32-characters",
-            "ADMIN_PASSWORD=": f"ADMIN_PASSWORD={admin_pw}",
-            "ENROLLMENT_NOTIFY_TO=": f"ENROLLMENT_NOTIFY_TO={notify}",
-            "SMTP_HOST=localhost": "SMTP_HOST=smtp.example.invalid",
-            "NEXT_PUBLIC_API_URL=http://localhost:3000": "NEXT_PUBLIC_API_URL=same-origin",
-            "S3_ENDPOINT=http://localhost:3900": "S3_ENDPOINT=http://garage:3900",
-            "S3_PUBLIC_URL=http://vh-media.web.garage.localhost:3902":
-              "S3_PUBLIC_URL=http://vh-media.web.garage.localhost:3902",
-            "NEXT_PUBLIC_S3_PUBLIC_URL=http://vh-media.web.garage.localhost:3902":
-              "NEXT_PUBLIC_S3_PUBLIC_URL=http://vh-media.web.garage.localhost:3902",
-            "S3_ACCESS_KEY=": f"S3_ACCESS_KEY={access}",
-            "S3_SECRET_KEY=": f"S3_SECRET_KEY={secret}",
-            "GARAGE_RPC_SECRET=": f"GARAGE_RPC_SECRET={rpc}",
+          # Só linhas de assignment (não comentários com S3_ACCESS_KEY=...)
+          assigns = {
+            "BETTER_AUTH_SECRET": "ci-compose-secret-with-at-least-32-characters",
+            "ADMIN_PASSWORD": admin_pw,
+            "ENROLLMENT_NOTIFY_TO": notify,
+            "SMTP_HOST": "smtp.example.invalid",
+            "NEXT_PUBLIC_API_URL": "same-origin",
+            "S3_ENDPOINT": "http://garage:3900",
+            "S3_PUBLIC_URL": "http://vh-media.web.garage.localhost:3902",
+            "NEXT_PUBLIC_S3_PUBLIC_URL": "http://vh-media.web.garage.localhost:3902",
+            "S3_ACCESS_KEY": access,
+            "S3_SECRET_KEY": secret,
+            "GARAGE_RPC_SECRET": rpc,
           }
           text = Path(".env").read_text(encoding="utf-8")
-          for a, b in repl.items():
-            if a not in text:
-              raise SystemExit(f"placeholder em falta no .env.example: {a!r}")
-            text = text.replace(a, b, 1)
-          if "ALLOW_INSECURE_S3=" not in text:
+          for key, value in assigns.items():
+            pattern = re.compile(rf"^{re.escape(key)}=.*$", re.MULTILINE)
+            if not pattern.search(text):
+              raise SystemExit(f"assignment em falta no .env.example: {key}")
+            text = pattern.sub(f"{key}={value}", text, count=1)
+          if not re.search(r"^ALLOW_INSECURE_S3=", text, re.MULTILINE):
               text += "\nALLOW_INSECURE_S3=true\n"
           Path(".env").write_text(text, encoding="utf-8")
-          Path("/tmp/vh-smoke-admin.env").write_text(
-              f"ADMIN_EMAIL=admin@vhteamfighters.pt\nADMIN_PASSWORD={admin_pw}\n",
-              encoding="utf-8",
-          )
+          # Sanity: chaves não podem ficar vazias
+          for key in ("S3_ACCESS_KEY", "S3_SECRET_KEY", "GARAGE_RPC_SECRET"):
+            m = re.search(rf"^{key}=(.+)$", text, re.MULTILINE)
+            if not m or not m.group(1).strip():
+              raise SystemExit(f"{key} ficou vazio após geração CI")
           print("CI .env derived from .env.example OK (random Garage keys)")
           PY
 
