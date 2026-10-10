@@ -75,8 +75,16 @@ describe("MediaService", () => {
     expect(result.publicUrl).toBe(
       "http://vh-media.web.garage.localhost:3902/gallery/00000000-0000-4000-8000-000000000001.png",
     );
-    expect(getSignedUrl).toHaveBeenCalled();
+    expect(getSignedUrl).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        expiresIn: 600,
+        signableHeaders: new Set(["content-type"]),
+      }),
+    );
   });
+
 
   it("rejects non-image content types", async () => {
     const service = new MediaService();

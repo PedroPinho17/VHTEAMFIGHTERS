@@ -41,7 +41,7 @@ See root `.env.example`. Minimum:
 - `REDIS_URL`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
-- `S3_*`
+- `S3_*` (incl. `S3_CORS_ORIGINS` = origem HTTPS do site; não `*`)
 - `SMTP_*`
 - `ENROLLMENT_NOTIFY_TO`
 - `SENTRY_DSN` (optional)

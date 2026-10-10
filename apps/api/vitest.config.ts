@@ -12,7 +12,6 @@ export default defineConfig({
         "src/**/*.spec.ts",
         "src/main.ts",
         "src/**/*.module.ts",
-        "src/**/*.dto.ts",
       ],
       thresholds: {
         lines: 70,

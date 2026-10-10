@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { GUARDS_METADATA } from "@nestjs/common/constants";
 import { MediaController } from "./media.controller";
+import { AdminGuard } from "../auth/auth.guard";
 
 describe("MediaController", () => {
   const mediaService = {
@@ -20,4 +22,11 @@ describe("MediaController", () => {
       "gallery",
     );
   });
+
+  it("is protected by AdminGuard at class level", () => {
+    const guards = (Reflect.getMetadata(GUARDS_METADATA, MediaController) ??
+      []) as unknown[];
+    expect(guards).toContain(AdminGuard);
+  });
 });
+

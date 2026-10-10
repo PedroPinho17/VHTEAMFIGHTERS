@@ -111,10 +111,17 @@ export class MediaService implements OnModuleInit {
 
   /** CORS for browser PUT/GET; website endpoint for anonymous reads (Garage). */
   private async ensureBucketPublicAccess() {
-    const origins = (process.env.S3_CORS_ORIGINS ?? "*")
+    const isProd = process.env.NODE_ENV === "production";
+    const origins = (process.env.S3_CORS_ORIGINS ?? (isProd ? "" : "http://localhost:3000"))
       .split(",")
       .map((s) => s.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((o) => o !== "*");
+
+    if (origins.length === 0) {
+      // Produção: assertProductionEnv já exige S3_CORS_ORIGINS. Local sem env: skip CORS.
+      return;
+    }
 
     try {
       await this.client.send(
@@ -123,7 +130,7 @@ export class MediaService implements OnModuleInit {
           CORSConfiguration: {
             CORSRules: [
               {
-                AllowedOrigins: origins.length > 0 ? origins : ["*"],
+                AllowedOrigins: origins,
                 AllowedMethods: ["GET", "PUT", "HEAD"],
                 AllowedHeaders: ["*"],
                 ExposeHeaders: ["ETag", "x-amz-request-id"],
@@ -175,7 +182,11 @@ export class MediaService implements OnModuleInit {
       Key: key,
       ContentType: type,
     });
-    const uploadUrl = await getSignedUrl(this.client, command, { expiresIn: 600 });
+    // Bind Content-Type into the signature so PUT text/html is rejected (403 SignatureDoesNotMatch).
+    const uploadUrl = await getSignedUrl(this.client, command, {
+      expiresIn: 600,
+      signableHeaders: new Set(["content-type"]),
+    });
     return {
       key,
       uploadUrl,

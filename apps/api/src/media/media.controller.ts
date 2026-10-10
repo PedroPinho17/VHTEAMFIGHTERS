@@ -1,16 +1,7 @@
 import { Body, Controller, Post, UseGuards } from "@nestjs/common";
-import { IsOptional, IsString } from "class-validator";
 import { MediaService } from "./media.service";
+import { PresignDto } from "./media.dto";
 import { AdminGuard } from "../auth/auth.guard";
-
-class PresignDto {
-  @IsString()
-  contentType!: string;
-
-  @IsOptional()
-  @IsString()
-  folder?: string;
-}
 
 @Controller("api/admin/media")
 @UseGuards(AdminGuard)

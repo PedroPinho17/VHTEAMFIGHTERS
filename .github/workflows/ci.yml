@@ -72,6 +72,7 @@ jobs:
       S3_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
       S3_BUCKET: vh-media
       S3_FORCE_PATH_STYLE: "true"
+      S3_CORS_ORIGINS: http://localhost:3000
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4

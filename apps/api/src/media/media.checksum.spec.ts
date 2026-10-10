@@ -27,11 +27,16 @@ describe("S3 presign checksum configuration", () => {
         Key: "gallery/smoke.png",
         ContentType: "image/png",
       }),
-      { expiresIn: 600 },
+      {
+        expiresIn: 600,
+        signableHeaders: new Set(["content-type"]),
+      },
     );
 
     expect(url).not.toMatch(/x-amz-checksum/i);
     expect(url).not.toMatch(/x-amz-sdk-checksum-algorithm/i);
     expect(url).not.toMatch(/AAAAAA==/);
+    expect(url).toMatch(/X-Amz-SignedHeaders=[^&]*content-type/i);
   });
 });
+
