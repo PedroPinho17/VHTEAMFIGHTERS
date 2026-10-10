@@ -3,6 +3,9 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { passkey } from "@better-auth/passkey";
 import { prisma } from "@vh/database";
 import { resolveAuthSecret } from "../env";
+import { authEmailPassword, authUserDefaults } from "./auth.config";
+
+export { authEmailPassword, authUserDefaults } from "./auth.config";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const authUrl = process.env.BETTER_AUTH_URL ?? appUrl;
@@ -35,15 +38,12 @@ export const auth = betterAuth({
   baseURL: authUrl,
   basePath: "/api/auth",
   trustedOrigins,
-  emailAndPassword: {
-    enabled: true,
-    disableSignUp: true,
-    minPasswordLength: 12,
-  },
+  emailAndPassword: { ...authEmailPassword },
   advanced: {
     defaultCookieAttributes: {
       sameSite: "lax",
-      secure: isProd,
+      // Compose/CI smoke usa HTTP; ALLOW_INSECURE_S3 marca esse cenário.
+      secure: isProd && process.env.ALLOW_INSECURE_S3 !== "true",
       path: "/",
     },
   },
@@ -52,7 +52,7 @@ export const auth = betterAuth({
       role: {
         type: "string",
         required: false,
-        defaultValue: "NONE",
+        defaultValue: authUserDefaults.roleDefault,
         input: false,
       },
       mustChangePassword: {

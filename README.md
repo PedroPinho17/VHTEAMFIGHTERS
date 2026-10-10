@@ -24,7 +24,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-Portas locais (só `127.0.0.1`): Postgres `5435` · Redis `6382` · Garage `3900` · Mailpit `8025`
+Portas locais (só `127.0.0.1`): Postgres `5435` · Redis `6382` · Garage S3 `3900` / web `3902` · Mailpit `8025`
 
 O `docker:up` activa o perfil `local` (Garage + Mailpit). Em produção o object storage é externo (S3/R2).
 

@@ -52,6 +52,8 @@ services:
       GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?Defina GARAGE_RPC_SECRET no .env}
     ports:
       - "127.0.0.1:3900:3900"
+      # Website endpoint (GET anónimo após PutBucketWebsite / garage bucket website --allow)
+      - "127.0.0.1:3902:3902"
     volumes:
       - ./docker/garage.toml:/etc/garage/garage.toml:ro
       - garage_meta:/var/lib/garage/meta

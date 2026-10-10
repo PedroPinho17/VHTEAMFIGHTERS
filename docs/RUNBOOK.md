@@ -10,13 +10,18 @@ Operação do site + CMS sem credenciais neste documento.
 | API | `:3001` (só via proxy em prod) | mesmo domínio `/api` — **não publicar 3001** |
 | Postgres | `127.0.0.1:5435` | serviço gerido |
 | Redis | `127.0.0.1:6382` | serviço gerido |
-| Object storage | Garage perfil `local` (`:3900`) | S3/R2/Garage HTTPS |
+| Object storage | Garage perfil `local` (S3 `:3900`, web `:3902`) | S3/R2 HTTPS (URL público sem `/bucket`) |
 | Mail | Mailpit perfil `local` | SMTP real (ex. Resend) |
 
 ## Arranque local
 
 ```bash
-cp .env.example .env   # preencher ADMIN_PASSWORD (≥12), ENROLLMENT_NOTIFY_TO (email real do cliente), BETTER_AUTH_SECRET
+cp .env.example .env
+# Preencher: ADMIN_PASSWORD (≥12), ENROLLMENT_NOTIFY_TO (email real do cliente), BETTER_AUTH_SECRET
+# Gerar chaves Garage (não usar valores de exemplo em produção):
+#   S3_ACCESS_KEY=GK$(openssl rand -hex 15)
+#   S3_SECRET_KEY=$(openssl rand -hex 32)
+#   GARAGE_RPC_SECRET=$(openssl rand -hex 32)
 pnpm install
 pnpm docker:up         # usa COMPOSE_PROFILES=local (Postgres, Redis, Garage, Mailpit)
 pnpm db:migrate
@@ -25,6 +30,13 @@ pnpm dev
 ```
 
 Health: `GET /api/health` · Ready (inclui S3): `GET /api/ready`
+
+### Media (upload e URLs públicas)
+
+- Upload: a API gera URLs pré-assinados **sem** checksum CRC32 vazio (`requestChecksumCalculation: WHEN_REQUIRED`).
+- Local (Garage): `S3_PUBLIC_URL` / `NEXT_PUBLIC_S3_PUBLIC_URL` = `http://vh-media.web.garage.localhost:3902` (endpoint web, GET anónimo). A API chama `PutBucketWebsite` + CORS no arranque.
+- Produção (R2): URL público `https://pub-….r2.dev` ou domínio custom — **sem** `/vh-media/` no caminho. Definir CORS no bucket R2 para a origem do site. Só usar `S3_PUBLIC_INCLUDE_BUCKET=true` / `NEXT_PUBLIC_S3_INCLUDE_BUCKET=true` se o CDN exigir path-style com bucket.
+- Pastas/tipos no presign: só `image/jpeg|png|webp` e pastas `uploads|gallery|people|posts|events|branding|home`.
 
 ### Migração antiga falhada (P3009)
 
@@ -107,3 +119,5 @@ Sem Active, o merge com CI vermelho volta a ser possível.
 | Spam em inscrições | rate limit (5/15min/IP), honeypot; considerar Turnstile |
 | Login falha | cookies same-origin (proxy `/api` → API), `BETTER_AUTH_URL` |
 | Avisos de inscrição em falta | `ENROLLMENT_NOTIFY_TO` real + SMTP/Resend |
+| Upload 400 InvalidDigest | checksum SDK — confirmar `WHEN_REQUIRED` no `S3Client` |
+| Imagens 403/404 | Garage: website `:3902` + CORS; R2: URL público sem `/bucket` + CORS |

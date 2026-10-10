@@ -27,9 +27,11 @@ This keeps Better Auth cookies on the same site.
 
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_APP_URL`
-- `NEXT_PUBLIC_S3_PUBLIC_URL`
-- `NEXT_PUBLIC_S3_BUCKET`
+- `NEXT_PUBLIC_S3_PUBLIC_URL` (R2: `https://pub-….r2.dev` ou domínio custom, **sem** `/bucket`)
+- `NEXT_PUBLIC_S3_BUCKET` (só se `NEXT_PUBLIC_S3_INCLUDE_BUCKET=true`)
 - `NEXT_PUBLIC_SENTRY_DSN` (optional)
+
+No bucket R2: activar acesso público e CORS (`GET`/`PUT`/`HEAD`) para a origem do site.
 
 ## Runtime env (api)
 

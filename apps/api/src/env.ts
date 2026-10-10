@@ -72,8 +72,25 @@ export function assertProductionEnv(): void {
 
   const access = process.env.S3_ACCESS_KEY!.trim();
   const secret = process.env.S3_SECRET_KEY!.trim();
-  if (access === "minioadmin" || secret === "minioadmin") {
-    throw new Error("Credenciais S3 por omissão (minioadmin) não são permitidas em produção.");
+  const forbiddenAccess = new Set([
+    "minioadmin",
+    "GKabcdef0123456789abcdef01234567",
+  ]);
+  const forbiddenSecret = new Set([
+    "minioadmin",
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  ]);
+  const forbiddenRpc = "a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00";
+  if (forbiddenAccess.has(access) || forbiddenSecret.has(secret)) {
+    throw new Error(
+      "Credenciais S3 de exemplo / por omissão não são permitidas em produção. Gere novas com openssl rand -hex.",
+    );
+  }
+  const rpc = process.env.GARAGE_RPC_SECRET?.trim();
+  if (rpc && rpc === forbiddenRpc) {
+    throw new Error(
+      "GARAGE_RPC_SECRET de exemplo não é permitido em produção. Gere com: openssl rand -hex 32",
+    );
   }
 }
 

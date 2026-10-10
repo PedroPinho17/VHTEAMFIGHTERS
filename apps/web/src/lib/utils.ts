@@ -8,9 +8,15 @@ export function cn(...inputs: ClassValue[]) {
 export function mediaUrl(key?: string | null) {
   if (!key) return null;
   if (key.startsWith("http")) return key;
-  const base = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? process.env.NEXT_PUBLIC_API_URL?.replace("3001", "9000") ?? "http://localhost:9000";
-  const bucket = process.env.NEXT_PUBLIC_S3_BUCKET ?? "vh-media";
-  return `${base.replace(/\/$/, "")}/${bucket}/${key}`;
+  const base =
+    process.env.NEXT_PUBLIC_S3_PUBLIC_URL ??
+    "http://vh-media.web.garage.localhost:3902";
+  // R2 public / Garage website: só a key. Path-style legado: NEXT_PUBLIC_S3_INCLUDE_BUCKET=true
+  if (process.env.NEXT_PUBLIC_S3_INCLUDE_BUCKET === "true") {
+    const bucket = process.env.NEXT_PUBLIC_S3_BUCKET ?? "vh-media";
+    return `${base.replace(/\/$/, "")}/${bucket}/${key}`;
+  }
+  return `${base.replace(/\/$/, "")}/${key}`;
 }
 
 export const dayLabels: Record<string, string> = {

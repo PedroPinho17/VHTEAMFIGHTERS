@@ -66,7 +66,7 @@ jobs:
       SMTP_PORT: "1025"
       SMTP_FROM: noreply@vhteamfighters.pt
       S3_ENDPOINT: http://localhost:3900
-      S3_PUBLIC_URL: http://localhost:3900
+      S3_PUBLIC_URL: http://vh-media.web.garage.localhost:3902
       S3_REGION: garage
       S3_ACCESS_KEY: GKabcdef0123456789abcdef01234567
       S3_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
@@ -94,6 +94,8 @@ jobs:
         run: pnpm --filter @vh/api lint
       - name: Lint Web
         run: pnpm --filter web lint
+      - name: Lint database
+        run: pnpm --filter @vh/database lint
       - name: Test API
         run: pnpm --filter @vh/api test
       - name: Build API
@@ -137,6 +139,7 @@ jobs:
               -f apps/web/Dockerfile \
               --build-arg NEXT_PUBLIC_APP_URL=http://localhost:3000 \
               --build-arg NEXT_PUBLIC_API_URL=same-origin \
+              --build-arg NEXT_PUBLIC_S3_PUBLIC_URL=http://vh-media.web.garage.localhost:3902 \
               --build-arg NEXT_PUBLIC_S3_BUCKET=vh-media \
               -t vh-web:ci . && exit 0
             echo "Web docker build failed (attempt $i), retrying..."
@@ -149,36 +152,60 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
       - name: Write CI .env from .env.example
         run: |
           set -euo pipefail
           cp .env.example .env
           python3 - <<'PY'
+          import re
+          import secrets
           from pathlib import Path
-          repl = {
-            "BETTER_AUTH_SECRET=change-me-to-a-long-random-secret-at-least-32-chars":
-              "BETTER_AUTH_SECRET=ci-compose-secret-with-at-least-32-characters",
-            "ADMIN_PASSWORD=": "ADMIN_PASSWORD=CiComposeAdmin12!",
-            "ENROLLMENT_NOTIFY_TO=": "ENROLLMENT_NOTIFY_TO=notify@vhteamfighters.pt",
-            "SMTP_HOST=localhost": "SMTP_HOST=smtp.example.invalid",
-            "NEXT_PUBLIC_API_URL=http://localhost:3000": "NEXT_PUBLIC_API_URL=same-origin",
-            "S3_ENDPOINT=http://localhost:3900": "S3_ENDPOINT=http://garage:3900",
-            "S3_PUBLIC_URL=http://localhost:3900": "S3_PUBLIC_URL=http://garage:3900",
-            "NEXT_PUBLIC_S3_PUBLIC_URL=http://localhost:3900": "NEXT_PUBLIC_S3_PUBLIC_URL=http://localhost:3900",
+
+          access = "GK" + secrets.token_hex(15)
+          secret = secrets.token_hex(32)
+          rpc = secrets.token_hex(32)
+          admin_pw = "CiComposeAdmin12!"
+          notify = "notify@vhteamfighters.pt"
+
+          # Só linhas de assignment (não comentários com S3_ACCESS_KEY=...)
+          assigns = {
+            "BETTER_AUTH_SECRET": "ci-compose-secret-with-at-least-32-characters",
+            "ADMIN_PASSWORD": admin_pw,
+            "ENROLLMENT_NOTIFY_TO": notify,
+            "SMTP_HOST": "smtp.example.invalid",
+            "NEXT_PUBLIC_API_URL": "same-origin",
+            "S3_ENDPOINT": "http://garage:3900",
+            "S3_PUBLIC_URL": "http://vh-media.web.garage.localhost:3902",
+            "NEXT_PUBLIC_S3_PUBLIC_URL": "http://vh-media.web.garage.localhost:3902",
+            "S3_ACCESS_KEY": access,
+            "S3_SECRET_KEY": secret,
+            "GARAGE_RPC_SECRET": rpc,
           }
           text = Path(".env").read_text(encoding="utf-8")
-          for a, b in repl.items():
-            text = text.replace(a, b, 1)
-          if "ALLOW_INSECURE_S3=" not in text:
+          for key, value in assigns.items():
+            pattern = re.compile(rf"^{re.escape(key)}=.*$", re.MULTILINE)
+            if not pattern.search(text):
+              raise SystemExit(f"assignment em falta no .env.example: {key}")
+            text = pattern.sub(f"{key}={value}", text, count=1)
+          if not re.search(r"^ALLOW_INSECURE_S3=", text, re.MULTILINE):
               text += "\nALLOW_INSECURE_S3=true\n"
-          if "GKabcdef0123456789abcdef01234567" not in text:
-              raise SystemExit("S3_ACCESS_KEY Garage no .env.example em falta")
-          if "GARAGE_RPC_SECRET=" not in text:
-              raise SystemExit("GARAGE_RPC_SECRET em falta no .env.example")
           Path(".env").write_text(text, encoding="utf-8")
-          print("CI .env derived from .env.example OK")
+          # Sanity: chaves não podem ficar vazias
+          for key in ("S3_ACCESS_KEY", "S3_SECRET_KEY", "GARAGE_RPC_SECRET"):
+            m = re.search(rf"^{key}=(.+)$", text, re.MULTILINE)
+            if not m or not m.group(1).strip():
+              raise SystemExit(f"{key} ficou vazio após geração CI")
+          print("CI .env derived from .env.example OK (random Garage keys)")
           PY
+
+      - name: Install deps (seed + smoke helpers)
+        run: pnpm install --frozen-lockfile
 
       - name: Build and start stack
         env:
@@ -245,6 +272,21 @@ jobs:
             logs web api || true
           exit 1
 
+      - name: Seed admin for media smoke
+        env:
+          DATABASE_URL: postgresql://vh:vhsecret@127.0.0.1:5435/vh_team?schema=public
+          ADMIN_EMAIL: admin@vhteamfighters.pt
+          ADMIN_PASSWORD: CiComposeAdmin12!
+          ADMIN_NAME: CI Compose Admin
+          BETTER_AUTH_SECRET: ci-compose-secret-with-at-least-32-characters
+          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+        run: |
+          set -euo pipefail
+          # POSTGRES_PASSWORD vem do .env gerado (vhsecret no example)
+          pnpm db:generate
+          pnpm db:seed
+
       - name: API smoke (health, signup 400, enrollments 401/201)
         env:
           COMPOSE_PROFILES: local
@@ -278,6 +320,81 @@ jobs:
           test "$code" = "201" -o "$code" = "200"
           echo "API smoke OK"
 
+      - name: Media upload smoke (presign → PUT → GET)
+        env:
+          COMPOSE_PROFILES: local
+        run: |
+          set -euo pipefail
+          COOKIE_JAR=/tmp/vh-smoke-cookies.txt
+          rm -f "$COOKIE_JAR"
+
+          # Login
+          code=$(curl -sS -c "$COOKIE_JAR" -b "$COOKIE_JAR" -o /tmp/vh-signin.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3001/api/auth/sign-in/email \
+            -H 'content-type: application/json' \
+            -d '{"email":"admin@vhteamfighters.pt","password":"CiComposeAdmin12!"}')
+          echo "sign-in HTTP=$code"
+          cat /tmp/vh-signin.json || true
+          test "$code" = "200"
+
+          # mustChangePassword → trocar password
+          NEW_PW='CiComposeAdmin99!'
+          code=$(curl -sS -c "$COOKIE_JAR" -b "$COOKIE_JAR" -o /tmp/vh-chpw.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3001/api/admin/me/change-password \
+            -H 'content-type: application/json' \
+            -d "{\"currentPassword\":\"CiComposeAdmin12!\",\"newPassword\":\"${NEW_PW}\"}")
+          echo "change-password HTTP=$code"
+          cat /tmp/vh-chpw.json || true
+          test "$code" = "200" -o "$code" = "201"
+
+          # Re-login (revokeOtherSessions)
+          rm -f "$COOKIE_JAR"
+          code=$(curl -sS -c "$COOKIE_JAR" -b "$COOKIE_JAR" -o /tmp/vh-signin2.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3001/api/auth/sign-in/email \
+            -H 'content-type: application/json' \
+            -d "{\"email\":\"admin@vhteamfighters.pt\",\"password\":\"${NEW_PW}\"}")
+          echo "re-sign-in HTTP=$code"
+          cat /tmp/vh-signin2.json || true
+          test "$code" = "200"
+
+          # Presign
+          code=$(curl -sS -c "$COOKIE_JAR" -b "$COOKIE_JAR" -o /tmp/vh-presign.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3001/api/admin/media/presign \
+            -H 'content-type: application/json' \
+            -d '{"contentType":"image/png","folder":"gallery"}')
+          echo "presign HTTP=$code"
+          cat /tmp/vh-presign.json
+          test "$code" = "201" -o "$code" = "200"
+
+          UPLOAD_URL=$(python3 -c 'import json; print(json.load(open("/tmp/vh-presign.json"))["uploadUrl"])')
+          PUBLIC_URL=$(python3 -c 'import json; print(json.load(open("/tmp/vh-presign.json"))["publicUrl"])')
+          KEY=$(python3 -c 'import json; print(json.load(open("/tmp/vh-presign.json"))["key"])')
+          echo "key=$KEY"
+          echo "uploadUrl=$UPLOAD_URL"
+          echo "publicUrl=$PUBLIC_URL"
+
+          # URL assinado aponta para hostname Docker `garage` — PUT na rede do compose
+          NETWORK=$(docker inspect -f '{{range $k, $_ := .NetworkSettings.Networks}}{{$k}}{{end}}' vh-api | head -n1)
+          test -n "$NETWORK"
+          # PNG 1x1 mínimo
+          printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' > /tmp/vh-smoke.png
+
+          put_code=$(docker run --rm --network "$NETWORK" -v /tmp/vh-smoke.png:/smoke.png:ro curlimages/curl:8.12.1 \
+            -sS -o /dev/null -w '%{http_code}' \
+            -X PUT -H 'Content-Type: image/png' --data-binary @/smoke.png \
+            "$UPLOAD_URL" || echo 000)
+          echo "PUT HTTP=$put_code"
+          test "$put_code" = "200"
+
+          # GET público via website Garage (Host = bucket + root_domain)
+          get_code=$(curl -sS -o /tmp/vh-get.png -w '%{http_code}' \
+            -H 'Host: vh-media.web.garage.localhost' \
+            "http://127.0.0.1:3902/${KEY}")
+          echo "GET website HTTP=$get_code"
+          test "$get_code" = "200"
+          test -s /tmp/vh-get.png
+          echo "Media upload smoke OK"
+
       - name: Web smoke
         env:
           COMPOSE_PROFILES: local
@@ -285,7 +402,7 @@ jobs:
           set -euo pipefail
           code=$(curl -sS -o /tmp/web-home.html -w '%{http_code}' -L http://127.0.0.1:3000/)
           test "$code" = "200"
-          grep -qiE 'VH|Fighters|Kickboxing|Inscri' /tmp/web-home.html || true
+          grep -qiE 'VH|Fighters|Kickboxing|Inscri' /tmp/web-home.html
           curl -sf http://127.0.0.1:3000/admin/login >/dev/null
           echo "Web smoke OK"
 
