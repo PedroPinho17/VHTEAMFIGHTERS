@@ -52,6 +52,8 @@ export class HealthController {
             accessKeyId: process.env.S3_ACCESS_KEY ?? "",
             secretAccessKey: process.env.S3_SECRET_KEY ?? "",
           },
+          requestChecksumCalculation: "WHEN_REQUIRED",
+          responseChecksumValidation: "WHEN_REQUIRED",
         });
         await client.send(new HeadBucketCommand({ Bucket: bucket }));
         checks.s3 = "ok";

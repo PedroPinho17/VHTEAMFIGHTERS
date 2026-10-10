@@ -14,6 +14,7 @@ describe("assertProductionEnv", () => {
     "S3_SECRET_KEY",
     "S3_BUCKET",
     "ALLOW_INSECURE_S3",
+    "GARAGE_RPC_SECRET",
   ] as const;
   const saved: Partial<Record<(typeof keys)[number], string | undefined>> = {};
 
@@ -58,6 +59,22 @@ describe("assertProductionEnv", () => {
     expect(() => assertProductionEnv()).toThrow(/ENROLLMENT_NOTIFY_TO/);
   });
 
+  it("rejects example Garage credentials in production", () => {
+    snapshot();
+    process.env.NODE_ENV = "production";
+    process.env.BETTER_AUTH_SECRET = "x".repeat(32);
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_FROM = "noreply@example.com";
+    process.env.ENROLLMENT_NOTIFY_TO = "equipa@cliente.pt";
+    process.env.S3_ENDPOINT = "https://s3.example.com";
+    process.env.S3_PUBLIC_URL = "https://cdn.example.com";
+    process.env.S3_ACCESS_KEY = "GKabcdef0123456789abcdef01234567";
+    process.env.S3_SECRET_KEY =
+      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    process.env.S3_BUCKET = "vh-media";
+    expect(() => assertProductionEnv()).toThrow(/exemplo|omissão/i);
+  });
+
   it("accepts a complete production config", () => {
     snapshot();
     process.env.NODE_ENV = "production";
@@ -70,6 +87,8 @@ describe("assertProductionEnv", () => {
     process.env.S3_ACCESS_KEY = "real-key";
     process.env.S3_SECRET_KEY = "real-secret";
     process.env.S3_BUCKET = "vh-media";
+    // .env local pode ter o RPC de exemplo injectado pelo dotenv — limpar no teste.
+    delete process.env.GARAGE_RPC_SECRET;
     expect(() => assertProductionEnv()).not.toThrow();
   });
 });

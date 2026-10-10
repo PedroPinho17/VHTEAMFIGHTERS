@@ -14,10 +14,10 @@ describe("MediaController", () => {
 
   it("presign delegates to media service", async () => {
     mediaService.createPresignedUpload.mockResolvedValue({ key: "k" });
-    await controller.presign({ contentType: "image/png", folder: "photos" });
+    await controller.presign({ contentType: "image/png", folder: "gallery" });
     expect(mediaService.createPresignedUpload).toHaveBeenCalledWith(
       "image/png",
-      "photos",
+      "gallery",
     );
   });
 });
