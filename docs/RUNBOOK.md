@@ -33,10 +33,23 @@ Health: `GET /api/health` · Ready (inclui S3): `GET /api/ready`
 
 ### Media (upload e URLs públicas)
 
-- Upload: a API gera URLs pré-assinados **sem** checksum CRC32 vazio (`requestChecksumCalculation: WHEN_REQUIRED`).
+- Upload: a API gera URLs pré-assinados **sem** checksum CRC32 vazio (`requestChecksumCalculation: WHEN_REQUIRED`) e com `content-type` assinado (`signableHeaders`), para o PUT não poder mudar o tipo (ex. `text/html`).
 - Local (Garage): `S3_PUBLIC_URL` / `NEXT_PUBLIC_S3_PUBLIC_URL` = `http://vh-media.web.garage.localhost:3902` (endpoint web, GET anónimo). A API chama `PutBucketWebsite` + CORS no arranque.
-- Produção (R2): URL público `https://pub-….r2.dev` ou domínio custom — **sem** `/vh-media/` no caminho. Definir CORS no bucket R2 para a origem do site. Só usar `S3_PUBLIC_INCLUDE_BUCKET=true` / `NEXT_PUBLIC_S3_INCLUDE_BUCKET=true` se o CDN exigir path-style com bucket.
+- Produção (R2): URL público `https://pub-….r2.dev` ou domínio custom — **sem** `/vh-media/` no caminho. CORS no bucket R2 para a origem do site. `S3_CORS_ORIGINS` é **obrigatório** em produção (lista de origens HTTPS do site; não usar `*`).
 - Pastas/tipos no presign: só `image/jpeg|png|webp` e pastas `uploads|gallery|people|posts|events|branding|home`.
+
+#### Alias global do bucket no Garage
+
+O website do Garage só serve buckets com **alias global**. O compose local usa `--default-bucket`, que já cria esse alias. Se criares o bucket só via `CreateBucket` da API (ou `aws s3 mb`) num Garage “limpo”, o website responde 404 até criares o alias:
+
+```bash
+# Dentro do contentor / CLI do cluster (substituir <bucket-id> por garage bucket list):
+garage bucket alias assign <bucket-id> global vh-media
+garage bucket website --allow vh-media
+```
+
+
+Em produção recomenda-se **R2** (ou S3) com URL público — evita esta particularidade do Garage.
 
 ### Migração antiga falhada (P3009)
 

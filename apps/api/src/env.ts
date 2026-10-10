@@ -47,6 +47,7 @@ export function assertProductionEnv(): void {
     "S3_ACCESS_KEY",
     "S3_SECRET_KEY",
     "S3_BUCKET",
+    "S3_CORS_ORIGINS",
   ] as const;
 
   for (const key of required) {
@@ -54,6 +55,13 @@ export function assertProductionEnv(): void {
     if (!value) {
       throw new Error(`${key} é obrigatório em produção.`);
     }
+  }
+
+  const corsOrigins = process.env.S3_CORS_ORIGINS!.trim();
+  if (corsOrigins === "*" || corsOrigins.split(",").some((o) => o.trim() === "*")) {
+    throw new Error(
+      "S3_CORS_ORIGINS não pode ser * em produção — liste as origens HTTPS do site.",
+    );
   }
 
   const notifyTo = process.env.ENROLLMENT_NOTIFY_TO!.trim();
