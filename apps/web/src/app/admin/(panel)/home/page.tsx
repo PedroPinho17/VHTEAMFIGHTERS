@@ -71,32 +71,45 @@ export default function AdminHomeContentPage() {
   if (!home) return <p>A carregar...</p>;
 
   return (
-    <form onSubmit={onSubmit} className="max-w-2xl space-y-6">
-      <h1 className="font-display text-5xl">Página inicial</h1>
+    <form onSubmit={onSubmit} className="max-w-3xl space-y-6">
+      <h1 className="font-display text-5xl text-cream">Página inicial</h1>
 
-      <section className="space-y-4 border border-ink/10 bg-white text-ink p-5">
-        <h2 className="font-display text-3xl">Marca do clube</h2>
-        <KrajeeFileInput
-          label="Logo do clube"
-          folder="branding"
-          value={logoKey}
-          onChange={setLogoKey}
-          optional
-        />
-        <KrajeeFileInput
-          label="Favicon"
-          folder="branding"
-          value={faviconKey}
-          onChange={setFaviconKey}
-          optional
-        />
-        <p className="text-xs text-ink/50">
-          Sem upload, o site e o backoffice usam o logo padrão em <code>/logo.png</code>.
-        </p>
+      <section className="space-y-5 rounded-md border border-ink/10 bg-white p-5 text-ink md:p-6">
+        <div>
+          <h2 className="font-display text-3xl tracking-wide">Marca do clube</h2>
+          <p className="mt-1 text-sm text-ink/50">
+            Sem upload, o site usa o logo padrão em <code className="text-ink/70">/logo.png</code>.
+          </p>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <KrajeeFileInput
+            label="Logo do clube"
+            folder="branding"
+            value={logoKey}
+            onChange={setLogoKey}
+            preview="square"
+            optional
+            hint="Aparece no topo e no rodapé do site."
+          />
+          <KrajeeFileInput
+            label="Favicon"
+            folder="branding"
+            value={faviconKey}
+            onChange={setFaviconKey}
+            preview="square"
+            optional
+            hint="Ícone da tab do browser. Ideal: PNG quadrado."
+          />
+        </div>
       </section>
 
-      <section className="space-y-4 border border-ink/10 bg-white text-ink p-5">
-        <h2 className="font-display text-3xl">Hero</h2>
+      <section className="space-y-5 rounded-md border border-ink/10 bg-white p-5 text-ink md:p-6">
+        <div>
+          <h2 className="font-display text-3xl tracking-wide">Hero</h2>
+          <p className="mt-1 text-sm text-ink/50">
+            Título, CTAs e imagem de fundo da primeira secção.
+          </p>
+        </div>
         {(
           [
             ["heroTitle", "Título hero", home.heroTitle],
@@ -117,17 +130,19 @@ export default function AdminHomeContentPage() {
           <Textarea id="bodyText" name="bodyText" defaultValue={home.bodyText} />
         </div>
         <KrajeeFileInput
-          label="Imagem hero"
+          label="Imagem de fundo"
           folder="home"
           value={heroImageKey}
           onChange={setHeroImageKey}
+          preview="wide"
           optional
+          hint="Imagem full-bleed atrás do título. Sem upload, usa o gradiente escuro."
         />
       </section>
 
       <Button type="submit">Guardar</Button>
       {msg && (
-        <p className={`text-sm ${msg.startsWith("Erro") ? "text-red-700" : "text-green-700"}`}>
+        <p className={`text-sm ${msg.startsWith("Erro") ? "text-red-400" : "text-emerald-400"}`}>
           {msg}
         </p>
       )}
