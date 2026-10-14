@@ -24,8 +24,12 @@ type Props = {
 export function SiteHeader({ logoUrl }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [src, setSrc] = useState(logoUrl || "/logo.png");
   const onHome = pathname === "/";
-  const src = logoUrl || "/logo.png";
+
+  useEffect(() => {
+    setSrc(logoUrl || "/logo.png");
+  }, [logoUrl]);
 
   useEffect(() => {
     setOpen(false);
@@ -41,7 +45,12 @@ export function SiteHeader({ logoUrl }: Props) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <Link href="/" className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt="VH Team Fighters" className="h-12 w-12 object-contain" />
+          <img
+            src={src}
+            alt="VH Team Fighters"
+            className="h-12 w-12 object-contain"
+            onError={() => setSrc("/logo.png")}
+          />
           <span
             className={cn(
               "font-display text-2xl tracking-wide",
